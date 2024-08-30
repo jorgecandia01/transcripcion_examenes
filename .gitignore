@@ -1,0 +1,69 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+dist/
+build/
+
+# Logs
+logs/
+*.log
+*.log.*
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Environments
+.env
+.env.local
+.env.*.local
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output/
+
+# Binary artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# PDFs and Images
+pdfs/
+imagenes/
+
+# Excel files 
+*.xlsx

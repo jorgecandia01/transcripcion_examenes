@@ -61,9 +61,6 @@ $RECYCLE.BIN/
 .Spotlight-V100
 .Trashes
 
-# PDFs and Images
-pdfs/
-imagenes/
 
 # Excel files 
-*.xlsx
+# *.xlsx

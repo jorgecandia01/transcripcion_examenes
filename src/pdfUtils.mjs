@@ -1,6 +1,11 @@
 import { fromBuffer } from 'pdf2pic';
 import Tesseract from 'tesseract.js';
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
+
+const archivosPDF = obtenerArchivosPDF();
+console.log(archivosPDF);
 
 export async function transcripcionOCRImagen(imagesBase64) {
     const transcriptions = await Promise.all(imagesBase64.map(async (base64Image) => {
@@ -49,4 +54,23 @@ export function getSchema() {
     const ExamenSchema = z.object({ array_preguntas: ExamenSchemaArray });
 
     return ExamenSchema;
+}
+
+
+
+function obtenerArchivosPDF() {
+    const targetPath = path.join(process.cwd(), 'src/target');
+    const archivosPDF = [];
+
+    // Leer los archivos en la carpeta /src/target
+    const archivos = fs.readdirSync(targetPath);
+
+    // Filtrar los archivos con extensión .pdf
+    archivos.forEach((archivo) => {
+        if (path.extname(archivo).toLowerCase() === '.pdf') {
+            archivosPDF.push(archivo);
+        }
+    });
+
+    return archivosPDF;
 }

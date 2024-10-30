@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
 import OpenAI from "openai";
 import * as xlsx from 'xlsx';
-import { transcripcionOCRImagen, obtenerArchivosPDF, loadAndConvertPdf, llamarGPT, asegurarParPDFPNG, convertirPNGABase64 } from './pdfUtils.mjs';
+import { transcripcionOCRImagen, obtenerArchivosPDF, loadAndConvertPdf, llamarGPT, asegurarParPDFPNG, convertirPNGABase64, 
+    obtenerArchivosPDFCrawler } from './pdfUtils.mjs';
 import pino from 'pino';
 import path from 'path';
 
@@ -17,7 +18,8 @@ const precioI = 2.5 / 1000000;
 const precioO = 10 / 1000000;
 
 
-const pdfs = obtenerArchivosPDF();
+// const pdfs = obtenerArchivosPDF();
+const pdfs = obtenerArchivosPDFCrawler();
 logger.info(`Archivos PDF para transcribir: ${pdfs}`);
 
 // transcribirPdf('examen2.pdf');
@@ -28,7 +30,7 @@ for(const pdf of pdfs) {
         // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
         transcribirPdf(pdf); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs puede saltar error
     } else {
-        logger.info('NO se procede a transcribir el PDF, ' + pdf + 'se para al siguiente PDF');
+        logger.info('NO se procede a transcribir el PDF, ' + pdf + 'se pasa al siguiente PDF');
     }
 }
 

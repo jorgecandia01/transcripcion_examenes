@@ -21,6 +21,7 @@ export async function transcripcionOCRImagen(imagesBase64) {
     return transcriptions.join(' ');
 }
 
+/// Función que convierte un PDF en base64 a un array de JSON que contienen la clave 'base64' de la imagen png
 export async function convertPdfToImages(pdfBase64) {
     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
     const options = {
@@ -58,7 +59,7 @@ export function getSchema() {
 }
 
 
-
+/// Obtiene todos los .pdf de un directorio
 export function obtenerArchivosPDF() {
     const targetPath = path.join(process.cwd(), 'src/target');
     const archivosPDF = [];
@@ -71,7 +72,35 @@ export function obtenerArchivosPDF() {
         if (path.extname(archivo).toLowerCase() === '.pdf') {
             archivosPDF.push(archivo);
         }
-    });
+    })
+
+    return archivosPDF;
+}
+
+
+/// Obtiene todos los .pdf de un directorio y sus directorios en cascada
+export function obtenerArchivosPDFCrawler() {
+    const targetPath = path.join(process.cwd(), 'src', 'target');
+    const archivosPDF = [];
+
+    function buscarPDFs(directorio) {
+        const archivos = fs.readdirSync(directorio);
+
+        archivos.forEach((archivo) => {
+            const rutaCompleta = path.join(directorio, archivo);
+
+            if (fs.statSync(rutaCompleta).isDirectory()) {
+                // Si es un directorio, llama a la función recursivamente
+                buscarPDFs(rutaCompleta);
+            } else if (path.extname(archivo).toLowerCase() === '.pdf') {
+                // Si es un archivo .pdf, agrega la ruta completa al array
+                archivosPDF.push(rutaCompleta);
+            }
+        });
+    }
+
+    // Iniciar la búsqueda desde el directorio targetPath
+    buscarPDFs(targetPath);
 
     return archivosPDF;
 }
@@ -160,11 +189,12 @@ export function asegurarParPDFPNG(nombrePDF) {
 
     // Verificar si el archivo .png correspondiente existe
     if (!fs.existsSync(archivoPNG)) {
-        console.log(`El archivo PNG correspondiente para ${nombrePDF} NO existe`);
+        console.error(`El archivo PNG correspondiente para ${nombrePDF} NO existe`);
         return false;
     } else {
-        console.log(`El archivo PNG correspondiente para ${nombrePDF} existe: ${archivoPNG}`);
+        console.error(`El archivo PNG correspondiente para ${nombrePDF} existe: ${archivoPNG}`);
         return true;
+        // return archivoPNG;
     }
 }
 

@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import OpenAI from "openai";
 import * as xlsx from 'xlsx';
 import { transcripcionOCRImagen, obtenerArchivosPDF, loadAndConvertPdf, llamarGPT, asegurarParPDFPNG, convertirPNGABase64, 
-    obtenerArchivosPDFCrawler } from './pdfUtils.mjs';
+    obtenerArchivosPDFCrawler, llamarGPT5 } from './pdfUtils.mjs';
 import pino from 'pino';
 import path from 'path';
 
@@ -28,7 +28,8 @@ for(const pdf of pdfs) {
     if(asegurarParPDFPNG(pdf)){
         logger.info('Se empieza a transcribir el PDF ' + pdf);
         // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
-        transcribirPdf(pdf); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs puede saltar error
+        await transcribirPdf(pdf); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs puede saltar error
+        //PROBAR QUE ESPERE 20SEG ANTES DE LA SIGUIENTE ITERACIÓN
     } else {
         logger.info('NO se procede a transcribir el PDF, ' + pdf + 'se pasa al siguiente PDF');
     }
@@ -45,7 +46,8 @@ logger.info('Transcripción de todos los PDFs terminada');
 /// Función core que toma como argumento el nombre del archivo PDF y crea un .xlsx con la transcripción del examen
 async function transcribirPdf(nombre) {
     // Extraigo el nombre base para utilizarlo en un futuro
-    const nombreBase = path.basename(nombre, '.pdf');
+    // const nombreBase = path.basename(nombre, '.pdf');
+    const nombreBase = nombre.replace(/\.pdf$/i, '');
 
     // Objengo la imagen png en base64 para ingestarla a chatgpt
     const imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`);
@@ -69,13 +71,14 @@ async function transcribirPdf(nombre) {
 
     // Crea un libro de trabajo (workbook) y una hoja de trabajo (worksheet)
     const workbook = xlsx.utils.book_new();
-    const worksheet = xlsx.utils.aoa_to_sheet([['Índice', 'Enunciado', 'Respuesta A', 'Respuesta B', 'Respuesta C', 'Respuesta D', 'Respuesta Correcta', 'Justificación']]);
+    // const worksheet = xlsx.utils.aoa_to_sheet([['Índice', 'Enunciado', 'Respuesta A', 'Respuesta B', 'Respuesta C', 'Respuesta D', 'Respuesta Correcta', 'Justificación']]);
+    const worksheet = xlsx.utils.aoa_to_sheet([['Índice', 'Enunciado', 'Respuesta A', 'Respuesta B', 'Respuesta C', 'Respuesta D', 'Respuesta E', 'Respuesta Correcta', 'Justificación']]);
 
     // Llamada a GPT y procesamiento de las respuestas
     logger.info('Se empieza a llamar a chatgpt para ' + nombre);
     for (const imagen_json of array_jsons_imagenesOCR) {
         try {
-            const respuesta = await llamarGPT(openai, imagen_json, imagen_respuestas);
+            const respuesta = await llamarGPT5(openai, imagen_json, imagen_respuestas);
             const contenido = JSON.parse(respuesta.choices[0].message.content); 
 
             tokensI += respuesta.usage.prompt_tokens;
@@ -92,6 +95,7 @@ async function transcribirPdf(nombre) {
                         pregunta.respuesta_b,
                         pregunta.respuesta_c,
                         pregunta.respuesta_d,
+                        pregunta.respuesta_e,
                         pregunta.respuesta_correcta,
                         pregunta.respuesta_justificacion
                     ]], { origin: -1 });

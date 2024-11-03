@@ -64,3 +64,10 @@ $RECYCLE.BIN/
 
 # Excel files 
 # *.xlsx
+
+
+# Archivos de prueba 
+prueba gine/
+pruebas/
+reserva/
+resultados/

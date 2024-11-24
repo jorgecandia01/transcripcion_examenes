@@ -1,10 +1,9 @@
 import dotenv from 'dotenv';
 import OpenAI from "openai";
 import * as xlsx from 'xlsx';
-import { transcripcionOCRImagen, obtenerArchivosPDF, loadAndConvertPdf, llamarGPT, asegurarParPDFPNG, convertirPNGABase64, 
-    obtenerArchivosPDFCrawler, llamarGPT5 } from './pdfUtils.mjs';
+import { transcripcionOCRImagen, loadAndConvertPdf, asegurarParPDFPNG, convertirPNGABase64, obtenerArchivosPDFCrawler } from './pdfUtils.mjs';
+import { llamarGPTSoloTrancripcion, llamarGPTTranscripcionYJustificacion } from './gptUtils.mjs';
 import pino from 'pino';
-import path from 'path';
 
 
 dotenv.config();
@@ -17,9 +16,14 @@ const openai = new OpenAI({ apiKey: api_key });
 const precioI = 2.5 / 1000000;
 const precioO = 10 / 1000000;
 
+// const tipo_ejecucion = ['solo_transcripcion', 'transcripcion_y_justificacion'];
+const solo_transcripcion = 'solo_transcripcion';
+const transcripcion_y_justificacion = 'transcripcion_y_justificacion';
+const ejecucion_seleccionada = transcripcion_y_justificacion;
 
 // const pdfs = obtenerArchivosPDF();
 const pdfs = obtenerArchivosPDFCrawler();
+logger.info(`Ejecución seleccionada: ${ejecucion_seleccionada}`)
 logger.info(`Archivos PDF para transcribir: ${pdfs}`);
 
 // transcribirPdf('examen2.pdf');
@@ -28,6 +32,7 @@ for(const pdf of pdfs) {
     if(asegurarParPDFPNG(pdf)){
         logger.info('Se empieza a transcribir el PDF ' + pdf);
         // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
+        // Meto el await porque sino el OCR funciona raro
         await transcribirPdf(pdf); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs puede saltar error
         //PROBAR QUE ESPERE 20SEG ANTES DE LA SIGUIENTE ITERACIÓN
     } else {
@@ -42,7 +47,6 @@ logger.info('Transcripción de todos los PDFs terminada');
 
 
 
-
 /// Función core que toma como argumento el nombre del archivo PDF y crea un .xlsx con la transcripción del examen
 async function transcribirPdf(nombre) {
     // Extraigo el nombre base para utilizarlo en un futuro
@@ -50,7 +54,7 @@ async function transcribirPdf(nombre) {
     const nombreBase = nombre.replace(/\.pdf$/i, '');
 
     // Objengo la imagen png en base64 para ingestarla a chatgpt
-    const imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`);
+    const imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`); // Uso este REGEX para eliminar el .png, pero dejar la ruta intacta
 
     // Cargar y convertir el PDF a imágenes
     let array_jsons_imagenes = await loadAndConvertPdf(nombre) || []; // Array de JSONs con imagen base64 y más cosas menos importantes
@@ -78,7 +82,13 @@ async function transcribirPdf(nombre) {
     logger.info('Se empieza a llamar a chatgpt para ' + nombre);
     for (const imagen_json of array_jsons_imagenesOCR) {
         try {
-            const respuesta = await llamarGPT5(openai, imagen_json, imagen_respuestas);
+            var respuesta = '';
+            if(ejecucion_seleccionada == transcripcion_y_justificacion){
+                respuesta = await llamarGPTTranscripcionYJustificacion(openai, imagen_json, imagen_respuestas);
+            } else if(ejecucion_seleccionada == solo_transcripcion){
+                respuesta = await llamarGPTSoloTrancripcion(openai, imagen_json);
+            }
+
             const contenido = JSON.parse(respuesta.choices[0].message.content); 
 
             tokensI += respuesta.usage.prompt_tokens;
@@ -111,14 +121,15 @@ async function transcribirPdf(nombre) {
         }
     }
 
-    // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
-    xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');
-    xlsx.writeFile(workbook, `src/target/${nombreBase}.xlsx`);
-    logger.info('-- Preguntas guardadas en ' + `src/target/${nombreBase}.xlsx`);
-
     // Calcular el costo
     logger.info(`Precios para ${nombre}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
+
+    // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');
+    xlsx.writeFile(workbook, `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
+    logger.info('-- Preguntas guardadas en ' + `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
 }
+
 
 
 

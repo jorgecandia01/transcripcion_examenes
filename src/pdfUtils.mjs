@@ -44,9 +44,9 @@ export async function convertPdfToImages(pdfBase64) {
 
 
 /// Obtiene todos los .pdf de un directorio. En este caso ../src/target/
-/// Acualmente uso obtenerArchivosPDFCrawler() para obtener tb los de los directorios en cascada
+/// Sólamente obtiene el nombre, no la ruta (ejemplo: 'examen.pdf')
 export function obtenerArchivosPDF() {
-    const targetPath = path.join(process.cwd(), 'src/target');
+    const targetPath = path.join(__dirname, 'target');
     const archivosPDF = [];
 
     // Leer los archivos en la carpeta /src/target
@@ -63,9 +63,29 @@ export function obtenerArchivosPDF() {
 }
 
 
+/// Obtiene todos los .pdf de un directorio. En este caso ../src/target/
+/// Sólamente obtiene el nombre, no la ruta (ejemplo: 'examen.xlsx')
+export function obtenerArchivosXLSX() {
+    const targetPath = path.join(__dirname, 'target');
+    const archivosPDF = [];
+
+    // Leer los archivos en la carpeta /src/target
+    const archivos = fs.readdirSync(targetPath);
+
+    // Filtrar los archivos con extensión .pdf
+    archivos.forEach((archivo) => {
+        if (path.extname(archivo).toLowerCase() === '.xlsx') {
+            archivosPDF.push(archivo);
+        }
+    })
+
+    return archivosPDF;
+}
+
+
 /// Obtiene todos los .pdf de un directorio y sus directorios en cascada. En este caso ../src/target/
 export function obtenerArchivosPDFCrawler() {
-    const targetPath = path.join(process.cwd(), 'src', 'target');
+    const targetPath = path.join(__dirname, 'target');
     const archivosPDF = [];
 
     function buscarPDFs(directorio) {
@@ -113,7 +133,7 @@ export async function loadAndConvertPdf(nombre) {
 
 /// Función que asegura que el archivo .pdf que se pasa como argumento (la ruta), tiene su correspondiente .png en la misma ruta
 export function asegurarParPDFPNG(nombrePDF) {
-    const targetDir = path.join(process.cwd(), 'src', 'target');
+    const targetDir = path.join(__dirname, 'target');
     const archivoPDF = path.join(targetDir, nombrePDF);
 
     // console.log(archivoPDF);
@@ -146,7 +166,7 @@ export function asegurarParPDFPNG(nombrePDF) {
 /// Función que obtiene la ruta de una imagen PNG (desde src/target), y devuelve un String base64 del PNG
 /// Usado para tratar las imagenes .png de las respuestas tipo test 
 export function convertirPNGABase64(nombrePNG) {
-    const targetDir = path.join(process.cwd(), 'src', 'target');
+    const targetDir = path.join(__dirname, 'target');
     const archivoPNG = path.join(targetDir, nombrePNG);
 
     // Leer el archivo .png y convertirlo a base64

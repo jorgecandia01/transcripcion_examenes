@@ -7,5 +7,9 @@
     "tesseract.js": "^5.1.1",
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
-  }
+  },
+  "name": "transcriptor",
+  "version": "1.0.0",
+  "main": "src/index.mjs",
+  "bin": "src/index.mjs"
 }

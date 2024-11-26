@@ -5,6 +5,7 @@ import xlsx from 'xlsx';
 import pino from 'pino';
 import path from 'path';
 import { llamarGPTSoloJustificaciones } from './gptUtils.mjs';
+import { obtenerArchivosXLSX } from './pdfUtils.mjs';
 
 
 dotenv.config();
@@ -17,64 +18,27 @@ const openai = new OpenAI({ apiKey: api_key });
 const precioI = 2.5 / 1000000;
 const precioO = 10 / 1000000;
 
+const excels = obtenerArchivosXLSX();
+logger.info(`Archivos excel para justificar: ${excels}`);
 
-// async function justificarRespuestas(rutaArchivo, rutaSalida) {
-//     // Leer el archivo Excel
-//     const libro = xlsx.readFile(rutaArchivo);
-//     const hoja = libro.Sheets[libro.SheetNames[0]];
 
-//     // Convertir la hoja a JSON para manejar las filas
-//     const datos = xlsx.utils.sheet_to_json(hoja, { header: 1 });
+for(const excel of excels) {
+    logger.info('Se empieza a justificar el excel ' + excel);
+    
+    await justificarRespuestas(excel);
+}
 
-//     var tokensI = 0;
-//     var tokensO = 0;
-
-//     // Iterar sobre cada fila (saltando el encabezado)
-//     for (let i = 1; i < datos.length; i++) {
-//         const fila = datos[i];
-//         const pregunta = fila[2]; // Columna C
-//         // console.log(pregunta)
-//         const respuestas = [fila[3], fila[4], fila[5], fila[6]]; // Columnas D, E, F y G
-//         // console.log(respuestas)
-//         const respuestaCorrecta = fila[7]; // Columna H
-//         // console.log(respuestaCorrecta)
-
-//         try {
-//             // console.log('a')
-//             // console.log(respuestaCorrecta)
-//             const respuestaGPT = await llamarGPTSoloJustificaciones(openai, pregunta, respuestas, respuestaCorrecta);
-//             const justificacion = respuestaGPT.choices[0].message.content;
-//             fila[8] = justificacion; // Agregar la justificación a la columna I
-//             // console.log(justificacion)
-
-//             // Añado precios
-//             tokensI += respuestaGPT.usage.prompt_tokens;
-//             tokensO += respuestaGPT.usage.completion_tokens;
-//         } catch(error) {
-//             console.error(`Error al procesar la fila ${i}:`, error.message);
-//             // console.log(error)
-//             fila[8] = 'Error al obtener justificación';
-//         }
-//     }
-//     // Calcular el costo
-//     logger.info(`Precios para ${rutaArchivo}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
-
-//     // Convertir los datos de vuelta a hoja de cálculo
-//     const nuevaHoja = xlsx.utils.aoa_to_sheet(datos);
-//     const nuevoLibro = xlsx.utils.book_new();
-//     xlsx.utils.book_append_sheet(nuevoLibro, nuevaHoja, 'Resultados');
-
-//     // Guardar el archivo Excel modificado
-//     xlsx.writeFile(nuevoLibro, rutaSalida);
-//     console.log(`Archivo guardado con justificaciones en: ${rutaSalida}`);
-// }
+logger.info('Justificación de todos los excels terminada');
 
 
 
 
-async function justificarRespuestas(rutaArchivo, rutaSalida) {
+async function justificarRespuestas(excel) {
+    const targetPath = path.join(__dirname, `target/${excel}`);
+    const endPath = path.join(__dirname, `target/resultados_solo_justificacion/justif_${excel}`);
+    
     // Leer el archivo Excel
-    const libro = xlsx.readFile(rutaArchivo);
+    const libro = xlsx.readFile(targetPath);
     const hoja = libro.Sheets[libro.SheetNames[0]];
 
     // Convertir la hoja a JSON para manejar las filas
@@ -107,8 +71,8 @@ async function justificarRespuestas(rutaArchivo, rutaSalida) {
     await Promise.all(promesas);
 
     // Calcular el costo
-    logger.info(`Tokens para ${rutaArchivo}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    logger.info(`Precios para ${rutaArchivo}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
+    logger.info(`Tokens para ${targetPath}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
+    logger.info(`Precios para ${targetPath}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
 
     // Convertir los datos de vuelta a hoja de cálculo
     const nuevaHoja = xlsx.utils.aoa_to_sheet(datos);
@@ -116,14 +80,70 @@ async function justificarRespuestas(rutaArchivo, rutaSalida) {
     xlsx.utils.book_append_sheet(nuevoLibro, nuevaHoja, 'Resultados');
 
     // Guardar el archivo Excel modificado
-    xlsx.writeFile(nuevoLibro, rutaSalida);
-    console.log(`Archivo guardado con justificaciones en: ${rutaSalida}`);
+    xlsx.writeFile(nuevoLibro, endPath);
+    console.log(`Archivo guardado con justificaciones en: ${endPath}`);
 }
 
 
+// async function justificarRespuestas(excel) {
+//     const targetPath = path.join(__dirname, `target/${excel}`);
+//     const endPath = path.join(__dirname, `target/resultados_solo_justificacion/justif_${excel}`);
+    
+//     // Leer el archivo Excel
+//     const libro = xlsx.readFile(targetPath);
+//     const hoja = libro.Sheets[libro.SheetNames[0]];
 
-const targetPath = path.join(process.cwd(), 'src/target/examen.xlsx');
-const endPath = path.join(process.cwd(), 'src/target/examen_justificado.xlsx');
+//     // Convertir la hoja a JSON para manejar las filas
+//     const datos = xlsx.utils.sheet_to_json(hoja, { header: 1 });
 
-// Llamar a la función
-justificarRespuestas(targetPath, endPath);
+//     let tokensI = 0;
+//     let tokensO = 0;
+
+//     // Crear una lista de promesas para manejar las llamadas en paralelo
+//     const resultados = await Promise.all(
+//         datos.slice(1).map(async (fila, i) => {
+//             const pregunta = fila[2]; // Columna C
+//             const respuestas = [fila[3], fila[4], fila[5], fila[6]]; // Columnas D, E, F y G
+//             const respuestaCorrecta = fila[7]; // Columna H
+
+//             try {
+//                 const respuestaGPT = await llamarGPTSoloJustificaciones(openai, pregunta, respuestas, respuestaCorrecta);
+//                 const justificacion = respuestaGPT.choices[0].message.content;
+                
+//                 // Añado precios
+//                 tokensI += respuestaGPT.usage.prompt_tokens;
+//                 tokensO += respuestaGPT.usage.completion_tokens;
+
+//                 return { index: i + 1, fila: [...fila, justificacion] }; // Incluye el índice y la fila completa con la justificación
+//             } catch (error) {
+//                 console.error(`Error al procesar la fila ${i + 1}:`, error.message);
+//                 return { index: i + 1, fila: [...fila, 'Error al obtener justificación'] }; // Incluye un mensaje de error si falla
+//             }
+//         })
+//     );
+
+//     // Reordenar resultados para garantizar el orden original
+//     const filasOrdenadas = resultados.sort((a, b) => a.index - b.index).map(r => r.fila);
+
+//     // Calcular el costo
+//     logger.info(`Tokens para ${targetPath}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
+//     logger.info(`Precios para ${targetPath}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
+
+//     // Agregar encabezado de vuelta y convertir los datos a hoja de cálculo
+//     const nuevaHoja = xlsx.utils.aoa_to_sheet([datos[0], ...filasOrdenadas]); // Combina encabezado con las filas
+//     const nuevoLibro = xlsx.utils.book_new();
+//     xlsx.utils.book_append_sheet(nuevoLibro, nuevaHoja, 'Resultados');
+
+//     // Guardar el archivo Excel modificado
+//     xlsx.writeFile(nuevoLibro, endPath);
+//     console.log(`Archivo guardado con justificaciones en: ${endPath}`);
+// }
+
+
+
+
+// const targetPath = path.join(__dirname, 'target/examen.xlsx');
+// const endPath = path.join(__dirname, 'target/resultados_solo_justificacion/examen_justificado.xlsx');
+
+// // Llamar a la función
+// justificarRespuestas(targetPath, endPath);

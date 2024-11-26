@@ -10,6 +10,18 @@
   },
   "name": "transcriptor",
   "version": "1.0.0",
-  "main": "src/index.mjs",
-  "bin": "src/index.mjs"
+  "main": "src/index.js",
+  "bin": "src/index.js",
+  "pkg": {
+    "assets": [
+      "node_modules/openai/**/*.js",
+      "node_modules/openai/**/*.json",
+      "node_modules/openai/_shims/auto/runtime-node.js",
+      "src/target/**/*",
+      "src/target/resultados_solo_justificacion/**/*",
+      "src/target/resultados_solo_transcripcion/**/*",
+      "src/target/resultados_transcripcion_y_justificacion/**/*",
+      ".env"
+    ]
+  }
 }

@@ -1,8 +1,0 @@
-{
-    "assets": [
-        "src/target/**/*",
-        "src/target/resultados_solo_justificacion/**/*",
-        "src/target/resultados_solo_transcripcion/**/*",
-        "src/target/resultados_transcripcion_y_justificacion/**/*"
-    ]
-}

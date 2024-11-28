@@ -46,14 +46,14 @@ async function iniciarTranscripcion(tipo_ejecucion){
     console.log(`Archivos PDF para transcribir: ${pdfs}`);
 
     for(const pdf of pdfs) {
-        if(asegurarParPDFPNG(pdf)){
+        if((ejecucion_seleccionada == solo_transcripcion) || asegurarParPDFPNG(pdf)){
             console.log('Se empieza a transcribir el PDF ' + pdf);
             // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
             // Meto el await porque sino el OCR funciona raro
             await transcribirPdf(pdf); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs puede saltar error
             //PROBAR QUE ESPERE 20SEG ANTES DE LA SIGUIENTE ITERACIÓN
         } else {
-            console.log('NO se procede a transcribir el PDF, ' + pdf + 'se pasa al siguiente PDF');
+            console.log('NO se procede a transcribir el PDF, ' + pdf + '. Se pasa al siguiente PDF');
         }
     }
 
@@ -71,7 +71,9 @@ async function transcribirPdf(nombre) {
     const nombreBase = nombre.replace(/\.pdf$/i, '');
 
     // Obtengo la imagen png en base64 para ingestarla a chatgpt
-    const imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`);
+    if((ejecucion_seleccionada == transcripcion_y_justificacion)){
+        var imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`);
+    }
 
     // Cargar y convertir el PDF a imágenes
     let array_jsons_imagenes = await loadAndConvertPdf(nombre) || [];

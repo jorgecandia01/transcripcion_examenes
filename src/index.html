@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF & PNG Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 400px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .file-input {
+            margin: 15px 0;
+        }
+
+        select {
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background: #007bff;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .api-key-container {
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .file-list {
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .file-list ul {
+            padding: 0;
+            list-style: none;
+        }
+
+        .file-list ul li {
+            background: #f4f4f4;
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF & PNG Processor</h1>
+
+        <form id="process-form">
+            <div class="file-input">
+                <label for="file">Choose PDF/PNG Files:</label>
+                <input type="file" id="file" name="file" multiple accept=".pdf,.png" required />
+            </div>
+
+            <div class="file-list" id="file-list">
+                <p>No files selected.</p>
+            </div>
+
+            <div class="api-key-container">
+                <label for="api-key">API Key:</label>
+                <input type="password" id="api-key" name="apiKey" placeholder="Enter your API key" required />
+                <input type="checkbox" id="toggle-api-key"> Show API Key
+            </div>
+
+            <select id="model-selector" name="modelSelector" required>
+                <option value="">-- Select a Model --</option>
+                <option value="chatgpt">ChatGPT</option>
+                <option value="claude">Claude</option>
+                <option value="gemini">Gemini</option>
+            </select>
+
+            <select id="process-type" name="processType" required>
+                <option value="">-- Select an Option --</option>
+                <option value="solo_transcripcion">Only Transcription</option>
+                <option value="transcripcion_y_justificacion">Transcription & Justification</option>
+            </select>
+
+            <button type="submit">Process</button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file');
+        const fileListContainer = document.getElementById('file-list');
+        const apiKeyInput = document.getElementById('api-key');
+        const toggleApiKey = document.getElementById('toggle-api-key');
+
+        fileInput.addEventListener('change', () => {
+            const files = fileInput.files;
+            if (files.length > 0) {
+                const fileList = Array.from(files).map(file => `<li>${file.name}</li>`).join('');
+                fileListContainer.innerHTML = `<ul>${fileList}</ul>`;
+            } else {
+                fileListContainer.innerHTML = '<p>No files selected.</p>';
+            }
+        });
+
+        toggleApiKey.addEventListener('change', () => {
+            apiKeyInput.type = toggleApiKey.checked ? 'text' : 'password';
+        });
+
+        document.getElementById('process-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            const files = fileInput.files;
+            const processType = document.getElementById('process-type').value;
+            const model = document.getElementById('model-selector').value;
+            const apiKey = apiKeyInput.value;
+
+            if (!files.length) {
+                alert('Please upload at least one file.');
+                return;
+            }
+
+            if (!processType) {
+                alert('Please select a process type.');
+                return;
+            }
+
+            if (!model) {
+                alert('Please select a model.');
+                return;
+            }
+
+            if (!apiKey) {
+                alert('Please enter your API key.');
+                return;
+            }
+
+            Array.from(files).forEach((file) => {
+                formData.append('files', file);
+            });
+
+            formData.append('processType', processType);
+            formData.append('model', model);
+            formData.append('apiKey', apiKey);
+
+            document.getElementById('result').innerText = 'Processing...';
+
+            try {
+                const response = await fetch('YOUR_BACKEND_URL', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to process files.');
+                }
+
+                const data = await response.json();
+
+                // Display success message or handle the returned file
+                document.getElementById('result').innerHTML = `
+                    <p>Processing complete. Download your file:</p>
+                    <a href="${data.downloadUrl}" target="_blank">Download Processed File</a>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerText = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

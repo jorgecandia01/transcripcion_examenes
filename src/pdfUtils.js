@@ -12,7 +12,9 @@ module.exports = {
     obtenerArchivosPDFCrawler,
     convertPdfToImages,
     convertirPNGABase64,
-    asegurarParPDFPNG
+    asegurarParPDFPNG,
+    convertirArchivosABase64,
+    verificarCorrespondenciaPDFPNG
 };
 
 
@@ -192,4 +194,37 @@ function convertirPNGABase64(nombrePNG) {
         return null;
     }
 }
+
+
+
+
+
+
+/// PARA LA WEB
+function verificarCorrespondenciaPDFPNG(files) {
+    const pdfs = files.filter(file => file.mimetype === 'application/pdf');
+    const pngs = files.filter(file => file.mimetype === 'image/png');
+
+    const pares = pdfs.map(pdf => {
+        const nombreBase = pdf.originalname.replace(/\.pdf$/i, '');
+        const pngCorrespondiente = pngs.find(png => png.originalname.startsWith(nombreBase));
+        return { pdf, png: pngCorrespondiente || null };
+    });
+
+    return pares;
+}
+
+
+function convertirArchivosABase64(pares) {
+    return pares.map(({ pdf, png }) => {
+        const pdfBase64 = fs.readFileSync(pdf.path).toString('base64');
+        const pngBase64 = png ? fs.readFileSync(png.path).toString('base64') : null;
+
+        return {
+            pdf: { name: pdf.originalname, base64: pdfBase64 },
+            png: png ? { name: png.originalname, base64: pngBase64 } : null,
+        };
+    });
+}
+
 

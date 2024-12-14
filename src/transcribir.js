@@ -8,6 +8,9 @@ const {
     convertirPNGABase64,
     obtenerArchivosPDFCrawler,
     obtenerArchivosPDF,
+    convertPdfToImages,
+    verificarCorrespondenciaPDFPNG,
+    convertirArchivosABase64
 } = require('./pdfUtils.js');
 const {
     llamarGPTSoloTrancripcion,
@@ -21,8 +24,8 @@ dotenv.config();
 const logger = pino();
 
 // Inicializa la API de OpenAI con la clave desde variables de entorno
-const api_key = process.env.OPENAI_API_KEY;
-const openai = new OpenAI({ apiKey: api_key });
+// const api_key = process.env.OPENAI_API_KEY;
+// const openai = new OpenAI({ apiKey: api_key });
 
 const precioI = 2.5 / 1000000;
 const precioO = 10 / 1000000;
@@ -37,46 +40,58 @@ module.exports = {
 };
 
 
-async function iniciarTranscripcion(tipo_ejecucion){
+async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
     ejecucion_seleccionada = tipo_ejecucion;
 
-    const pdfs = obtenerArchivosPDF();
+    // const pdfs = obtenerArchivosPDF();
     // const pdfs = obtenerArchivosPDFCrawler();
-    console.log(`Ejecución seleccionada: ${ejecucion_seleccionada}`)
-    console.log(`Archivos PDF para transcribir: ${pdfs}`);
+    // const pdfs = files.map(file => file.path); 
+    const resultados = [];
 
-    for(const pdf of pdfs) {
-        if((ejecucion_seleccionada == solo_transcripcion) || asegurarParPDFPNG(pdf)){
-            console.log('Se empieza a transcribir el PDF ' + pdf);
+    const pares = verificarCorrespondenciaPDFPNG(files);
+    const paresBase64 = convertirArchivosABase64(pares);
+
+    console.log(`Ejecución seleccionada: ${ejecucion_seleccionada}`)
+    // console.log(`Archivos PDF para transcribir: ${pares}`);
+
+    for(const par of paresBase64) {
+        // if((ejecucion_seleccionada == solo_transcripcion) || asegurarParPDFPNG(pdf)){ // En solo_transc no hace falta asegurar el par
+        
+        if(par['png'] != null || (ejecucion_seleccionada == solo_transcripcion)){ 
+            console.log('Se empieza a transcribir el PDF ' + par);
             // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
             // Meto el await porque sino el OCR funciona raro
-            await transcribirPdf(pdf); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs puede saltar error
+            // await transcribirPdf(pdf, openai); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs/páginas puede saltar error
+            const content = await transcribirPdf(par, openai); // No paso ejecucion_seleccionada porque es variable global
+            // const name = `resultado_transcripcion_${Date.now()}.xlsx`;
+            const name = `${par['pdf']['name'].replace(/\.pdf$/i, '')}.xlsx`;
+            resultados.push({ name, content });
             //PROBAR QUE ESPERE 20SEG ANTES DE LA SIGUIENTE ITERACIÓN
         } else {
-            console.log('NO se procede a transcribir el PDF, ' + pdf + '. Se pasa al siguiente PDF');
+            console.log('NO se procede a transcribir el PDF, ' + par + '. Se pasa al siguiente PDF');
         }
     }
 
-    console.log('Transcripción de todos los PDFs terminada');
+    console.log('Transcripción de todos los PDFs terminada. Resultados: ', resultados);
+    return resultados;
 }
 
 
 
 
 
-
-
-async function transcribirPdf(nombre) {
-    // Extraigo el nombre base para utilizarlo en un futuro
-    const nombreBase = nombre.replace(/\.pdf$/i, '');
+async function transcribirPdf(par, openai) {
+    const nombre = par['pdf']['name'];
 
     // Obtengo la imagen png en base64 para ingestarla a chatgpt
     if((ejecucion_seleccionada == transcripcion_y_justificacion)){
-        var imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`);
+        // var imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`);
+        var imagen_respuestas = par['png']['base64'];
     }
 
     // Cargar y convertir el PDF a imágenes
-    let array_jsons_imagenes = await loadAndConvertPdf(nombre) || [];
+    // let array_jsons_imagenes = await loadAndConvertPdf(nombre) || [];
+    let array_jsons_imagenes = await convertPdfToImages(par['pdf']['base64']) || [];
 
     // Variables para llevar la cuenta de los tokens
     let tokensI = 0;
@@ -156,8 +171,12 @@ async function transcribirPdf(nombre) {
 
     // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');
-    xlsx.writeFile(workbook, `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
-    console.log('-- Preguntas guardadas en ' + `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
+    // xlsx.writeFile(workbook, `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
+
+    const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    // console.log('-- Preguntas guardadas en ' + `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
+
+    return buffer;
 }
 
 

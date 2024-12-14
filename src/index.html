@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF & PNG Processor</title>
+    <title>PDF & PNG Processorr</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -85,12 +85,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>PDF & PNG Processor</h1>
+        <h1>PDF & PNG Processorr</h1>
 
         <form id="process-form">
             <div class="file-input">
-                <label for="file">Choose PDF/PNG Files:</label>
-                <input type="file" id="file" name="file" multiple accept=".pdf,.png" required />
+                <label for="file">Choose PDF/PNG/XLSX Files:</label>
+                <input type="file" id="file" name="file" multiple accept=".pdf,.png,.xlsx" required />
             </div>
 
             <div class="file-list" id="file-list">
@@ -103,17 +103,11 @@
                 <input type="checkbox" id="toggle-api-key"> Show API Key
             </div>
 
-            <select id="model-selector" name="modelSelector" required>
-                <option value="">-- Select a Model --</option>
-                <option value="chatgpt">ChatGPT</option>
-                <option value="claude">Claude</option>
-                <option value="gemini">Gemini</option>
-            </select>
-
             <select id="process-type" name="processType" required>
                 <option value="">-- Select an Option --</option>
                 <option value="solo_transcripcion">Only Transcription</option>
                 <option value="transcripcion_y_justificacion">Transcription & Justification</option>
+                <option value="solo_justificacion">Only Justification</option>
             </select>
 
             <button type="submit">Process</button>
@@ -148,7 +142,6 @@
             const formData = new FormData();
             const files = fileInput.files;
             const processType = document.getElementById('process-type').value;
-            const model = document.getElementById('model-selector').value;
             const apiKey = apiKeyInput.value;
 
             if (!files.length) {
@@ -158,11 +151,6 @@
 
             if (!processType) {
                 alert('Please select a process type.');
-                return;
-            }
-
-            if (!model) {
-                alert('Please select a model.');
                 return;
             }
 
@@ -176,28 +164,47 @@
             });
 
             formData.append('processType', processType);
-            formData.append('model', model);
             formData.append('apiKey', apiKey);
 
             document.getElementById('result').innerText = 'Processing...';
 
             try {
-                const response = await fetch('YOUR_BACKEND_URL', {
+                let endpoint;
+                endpoint = 'http://127.0.0.1:8080'
+
+                switch (processType) {
+                    case 'solo_transcripcion':
+                        endpoint += '/transcribir';
+                        break;
+                    case 'transcripcion_y_justificacion':
+                        endpoint += '/transcribir_y_justificar';
+                        break;
+                    case 'solo_justificacion':
+                        endpoint += '/justificar';
+                        break;
+                    default:
+                        throw new Error('Invalid process type selected.');
+                }
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
                 });
 
                 if (!response.ok) {
                     throw new Error('Failed to process files.');
                 }
 
-                const data = await response.json();
-
-                // Display success message or handle the returned file
-                document.getElementById('result').innerHTML = `
-                    <p>Processing complete. Download your file:</p>
-                    <a href="${data.downloadUrl}" target="_blank">Download Processed File</a>
-                `;
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'results.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.getElementById('result').innerText = 'Processing complete. Your file is ready for download.';
             } catch (error) {
                 document.getElementById('result').innerText = 'Error: ' + error.message;
             }

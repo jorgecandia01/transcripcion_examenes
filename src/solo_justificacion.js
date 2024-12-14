@@ -1,57 +1,41 @@
-const dotenv = require('dotenv');
-const OpenAI = require('openai');
-// const xlsx = require('xlsx'); // Mantén esta línea comentada si no usas todos los métodos de xlsx.
 const xlsx = require('xlsx');
-const pino = require('pino');
 const path = require('path');
 const { llamarGPTSoloJustificaciones } = require('./gptUtils.js');
-const { obtenerArchivosXLSX } = require('./pdfUtils.js');
-
-
-
-dotenv.config();
-const logger = pino();
-
-// Inicializa la API de OpenAI con la clave desde variables de entorno
-const api_key = process.env.OPENAI_API_KEY;
-const openai = new OpenAI({ apiKey: api_key });
 
 const precioI = 2.5 / 1000000;
 const precioO = 10 / 1000000;
-
-
-
 
 module.exports = {
     iniciarJustificacion,
 }
 
 
-async function iniciarJustificacion(){
-    const excels = obtenerArchivosXLSX();
+async function iniciarJustificacion(files, openai){
+    // const excels = obtenerArchivosXLSX();
+    // const excels = files.map(file => file.path);
+    const excels = files;
     console.log(`Archivos excel para justificar: ${excels}`);
+
+    const resultados = [];
 
     for(const excel of excels) {
         console.log('Se empieza a justificar el excel ' + excel);
         
-        await justificarRespuestas(excel);
+        // await justificarRespuestas(excel, openai);
+        const result = await justificarRespuestas(excel['path'], openai);
+        // const name = `justificacion_resultados_${Date.now()}.xlsx`;
+        const name = `${excel['originalname'].replace(/\.pdf$/i, '')}.xlsx`;
+        resultados.push({ name, content: result });
     }
     
     console.log('Justificación de todos los excels terminada');
+    return resultados;
 }
 
 
 
-
-
-
-
-async function justificarRespuestas(excel) {
-    const targetPath = path.join(__dirname, `target/objetivo/${excel}`);
-    const endPath = path.join(__dirname, `target/resultados_solo_justificacion/justif_${excel}`);
-    
-    // Leer el archivo Excel
-    const libro = xlsx.readFile(targetPath);
+async function justificarRespuestas(excel, openai) {
+    const libro = xlsx.readFile(excel);
     const hoja = libro.Sheets[libro.SheetNames[0]];
 
     // Convertir la hoja a JSON para manejar las filas
@@ -84,16 +68,17 @@ async function justificarRespuestas(excel) {
     await Promise.all(promesas);
 
     // Calcular el costo
-    console.log(`Tokens para ${targetPath}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    console.log(`Precios para ${targetPath}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
+    console.log(`Tokens para ${excel}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
+    console.log(`Precios para ${excel}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
 
     // Convertir los datos de vuelta a hoja de cálculo
     const nuevaHoja = xlsx.utils.aoa_to_sheet(datos);
     const nuevoLibro = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(nuevoLibro, nuevaHoja, 'Resultados');
 
-    // Guardar el archivo Excel modificado
-    xlsx.writeFile(nuevoLibro, endPath);
-    console.log(`Archivo guardado con justificaciones en: ${endPath}`);
+    // Generar el buffer del archivo Excel modificado
+    const buffer = xlsx.write(nuevoLibro, { bookType: 'xlsx', type: 'buffer' });
+
+    return buffer;
 }
 

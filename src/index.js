@@ -30,9 +30,9 @@ app.post('/transcribir', upload.array('files'), async (req, res) => {
 
         const resultFiles = await iniciarTranscripcion(solo_transcripcion, files, openai);
 
-        // if (resultFiles.length === 0) {
-        //     return res.status(400).send('No se pudieron transcribir los archivos.');
-        // }
+        if (resultFiles.length === 0) {
+            return res.status(400).send('No se pudieron transcribir los archivos.');
+        }
 
         // Crear un ZIP en memoria
         const zip = new AdmZip();
@@ -44,7 +44,7 @@ app.post('/transcribir', upload.array('files'), async (req, res) => {
 
         res.set({
             'Content-Type': 'application/zip',
-            'Content-Disposition': 'attachment; filename="transcripcion_resultados.zip"',
+            'Content-Disposition': 'inline; filename="transcripcion_resultados.zip"',
             'Content-Length': zipBuffer.length,
         });
 
@@ -71,9 +71,9 @@ app.post('/transcribir_y_justificar', upload.array('files'), async (req, res) =>
 
         const resultFiles = await iniciarTranscripcion(transcripcion_y_justificacion, files, openai);
 
-        // if (resultFiles.length === 0) {
-        //     return res.status(400).send('No se pudieron transcribir los archivos.');
-        // }
+        if (resultFiles.length === 0) {
+            return res.status(400).send('No se pudieron transcribir los archivos.');
+        }
 
         // Crear un ZIP en memoria
         const zip = new AdmZip();
@@ -112,9 +112,9 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
 
         const resultFiles = await iniciarJustificacion(files, openai);
 
-        // if(resultFiles.length === 0) {
-        //     return res.status(400).send('No se han encontrado archivos excel.');
-        // }
+        if(resultFiles.length === 0) {
+            return res.status(400).send('No se han encontrado archivos excel.');
+        }
 
         // Crear un ZIP en memoria
         const zip = new AdmZip();
@@ -136,6 +136,46 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
         res.status(500).send('Error al procesar la solicitud.');
     }
 });
+
+// Array para guardar las conexiones activas
+const activeConnections = [];
+
+app.get('/logs', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Añadir conexión activa
+    activeConnections.push(res);
+
+    // Enviar mensaje inicial
+    res.write(`data: Conexión establecida\n\n`);
+
+    req.on('close', () => {
+        // Eliminar conexión cerrada
+        const index = activeConnections.indexOf(res);
+        if (index !== -1) {
+            activeConnections.splice(index, 1);
+        }
+        console.log('Conexión SSE cerrada');
+    });
+});
+
+// Función para enviar logs a todas las conexiones activas
+function sendLogToClients(message) {
+    activeConnections.forEach((res) => {
+        res.write(`data: ${message}\n\n`);
+    });
+}
+
+// Reemplazar console.log solo para los mensajes enviados al cliente
+const originalLog = console.log;
+console.log = function (...args) {
+    const message = args.join(' ');
+    sendLogToClients(message);
+    originalLog(...args); // Mantener el comportamiento original de console.log
+};
+
 
 // Puerto
 const PORT = 8080;

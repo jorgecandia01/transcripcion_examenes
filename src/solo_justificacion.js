@@ -24,7 +24,7 @@ async function iniciarJustificacion(files, openai){
         // await justificarRespuestas(excel, openai);
         const result = await justificarRespuestas(excel['path'], openai);
         // const name = `justificacion_resultados_${Date.now()}.xlsx`;
-        const name = `${excel['originalname'].replace(/\.pdf$/i, '')}.xlsx`;
+        const name = `justif_${excel['originalname']}`;
         resultados.push({ name, content: result });
     }
     

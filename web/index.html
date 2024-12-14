@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcriptor Formantia</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --background-color: #f0f4f8;
+            --card-color: #ffffff;
+            --text-color: #333;
+            --log-background: #f1f5f9;
+            --log-border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header h1 i {
+            color: var(--secondary-color);
+        }
+
+        .file-input-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .file-input {
+            position: relative;
+            overflow: hidden;
+            border: 2px dashed var(--primary-color);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .file-input:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .file-input input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-list {
+            margin-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .file-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .file-list ul li {
+            background-color: var(--background-color);
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-list ul li i {
+            color: var(--primary-color);
+        }
+
+        .api-key-container {
+            margin-bottom: 20px;
+        }
+
+        .api-key-container label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .api-key-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .api-key-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            appearance: none;
+            background-color: white;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M10.3 3.3L6 7.6 1.7 3.3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l5 5c.4.4 1 .4 1.4 0l5-5c.4-.4.4-1 0-1.4s-1-.4-1.4 0z' fill='%23999999'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .result {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .logs-container {
+            background-color: var(--log-background);
+            border: 1px solid var(--log-border);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .logs-container h2 {
+            margin-bottom: 10px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logs-container h2 i {
+            color: var(--primary-color);
+        }
+
+        #log-messages {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #log-messages p {
+            margin: 3px 0;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        #log-messages p:nth-child(odd) {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        #log-messages p.error {
+            color: #d9534f;
+            background-color: rgba(217, 83, 79, 0.1);
+        }
+
+        #log-messages p.success {
+            color: #5cb85c;
+            background-color: rgba(92, 184, 92, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-upload"></i>Transcriptor Formantia</h1>
+        </div>
+
+        <form id="process-form">
+            <div class="file-input-wrapper">
+                <label for="file">Seleccionar archivos PDF/PNG/XLSX:</label>
+                <div class="file-input">
+                    <input type="file" id="file" name="file" multiple accept=".pdf,.png,.xlsx" required />
+                    <p>Arrastra y suelta archivos o haz clic para seleccionar</p>
+                </div>
+            </div>
+
+            <div class="file-list" id="file-list">
+                <p>Ningún archivo seleccionado.</p>
+            </div>
+
+            <div class="api-key-container">
+                <br>
+                <label for="api-key">API Key:</label>
+                <div class="api-key-input">
+                    <input type="password" id="api-key" name="apiKey" placeholder="Ingresa tu clave API" required />
+                    <input type="checkbox" id="toggle-api-key" aria-label="Mostrar">
+                </div>
+            </div>
+
+            <select id="process-type" name="processType" required>
+                <option value="">-- Selecciona una opción --</option>
+                <option value="transcripcion_y_justificacion">Transcripción y Justificación (pdf y png)</option>
+                <option value="solo_transcripcion">Solo Transcripción (pdf)</option>
+                <option value="solo_justificacion">Solo Justificación (xlsx)</option>
+            </select>
+
+            <button type="submit">Procesar</button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <div class="logs-container">
+        <h2><i class="fas fa-terminal"></i>Registro de Actividad</h2>
+        <div id="log-messages"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file');
+        const fileListContainer = document.getElementById('file-list');
+        const apiKeyInput = document.getElementById('api-key');
+        const toggleApiKey = document.getElementById('toggle-api-key');
+        const logContainer = document.getElementById('log-messages');
+        const logsContainer = document.querySelector('.logs-container');
+
+        fileInput.addEventListener('change', () => {
+            const files = fileInput.files;
+            if (files.length > 0) {
+                const fileList = Array.from(files).map(file => 
+                    `<li><i class="fas fa-file"></i>${file.name}</li>`
+                ).join('');
+                fileListContainer.innerHTML = `<ul>${fileList}</ul>`;
+            } else {
+                fileListContainer.innerHTML = '<p>Ningún archivo seleccionado.</p>';
+            }
+        });
+
+        toggleApiKey.addEventListener('change', () => {
+            apiKeyInput.type = toggleApiKey.checked ? 'text' : 'password';
+        });
+
+        function addLogMessage(message, type = '') {
+            const logMessage = document.createElement('p');
+            logMessage.textContent = message;
+            logMessage.className = type;
+            logContainer.appendChild(logMessage);
+            
+            // Scroll to bottom automatically
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        document.getElementById('process-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Clear previous logs
+            logContainer.innerHTML = '';
+            addLogMessage('Iniciando procesamiento...', 'success');
+
+            const formData = new FormData();
+            const files = fileInput.files;
+            const processType = document.getElementById('process-type').value;
+            const apiKey = apiKeyInput.value;
+
+            if (!files.length) {
+                addLogMessage('Error: Por favor, sube al menos un archivo.', 'error');
+                return;
+            }
+
+            if (!processType) {
+                addLogMessage('Error: Por favor, selecciona un tipo de proceso.', 'error');
+                return;
+            }
+
+            if (!apiKey) {
+                addLogMessage('Error: Por favor, ingresa tu clave API.', 'error');
+                return;
+            }
+
+            Array.from(files).forEach((file) => {
+                formData.append('files', file);
+                addLogMessage(`Archivo preparado: ${file.name}`);
+            });
+
+            formData.append('processType', processType);
+            formData.append('apiKey', apiKey);
+
+            document.getElementById('result').innerText = 'Procesando...';
+
+            try {
+                let endpoint = '';
+                // endpoint = 'http://127.0.0.1:8080';
+                endpoint = 'https://backend-76375499655.europe-southwest1.run.app';
+
+                switch (processType) {
+                    case 'solo_transcripcion':
+                        endpoint += '/transcribir';
+                        break;
+                    case 'transcripcion_y_justificacion':
+                        endpoint += '/transcribir_y_justificar';
+                        break;
+                    case 'solo_justificacion':
+                        endpoint += '/justificar';
+                        break;
+                    default:
+                        throw new Error('Tipo de proceso inválido.');
+                }
+
+                addLogMessage(`Enviando solicitud a: ${endpoint}`);
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Fallo al procesar archivos: ${response.statusText}`);
+                }
+
+                const blob = await response.blob();
+                addLogMessage('Archivos procesados exitosamente.', 'success');
+
+                if (blob.size > 0) {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'resultados.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.getElementById('result').innerText = 'Procesamiento completado. Su archivo está listo para descargar.';
+                    addLogMessage('Archivo de resultados generado.', 'success');
+                } else {
+                    throw new Error('Se recibió un archivo vacío del servidor.');
+                }
+            } catch (error) {
+                addLogMessage(`Error: ${error.message}`, 'error');
+                document.getElementById('result').innerText = 'Error: ' + error.message;
+            }
+        });
+
+        // Initialize Server-Sent Events (SSE) for logs
+        // const eventSource = new EventSource('http://127.0.0.1:8080/logs'); // RUTA PARA LOCAL
+        const eventSource = new EventSource('https://backend-76375499655.europe-southwest1.run.app/logs'); // URL del container de docker
+
+
+        eventSource.onmessage = (event) => {
+            addLogMessage(event.data);
+        };
+
+        eventSource.onerror = (error) => {
+            addLogMessage('Error en la transmisión de logs.', 'error');
+            console.error('Error in SSE connection:', error);
+        };
+    </script>
+</body>
+</html>

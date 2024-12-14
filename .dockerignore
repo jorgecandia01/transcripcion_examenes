@@ -1,0 +1,6 @@
+src/uploads/
+target/
+spa.traineddata
+.gitignore
+README.md
+.DS_Store

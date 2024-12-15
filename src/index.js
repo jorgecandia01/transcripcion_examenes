@@ -50,7 +50,7 @@ app.post('/transcribir', upload.array('files'), async (req, res) => {
 
         res.send(zipBuffer);
     } catch (error) {
-        console.error('Error al procesar la transcripción:', error);
+        console.log('Error al procesar la transcripción:', error);
         res.status(500).send('Error al procesar la solicitud.');
     }
 });
@@ -91,7 +91,7 @@ app.post('/transcribir_y_justificar', upload.array('files'), async (req, res) =>
 
         res.send(zipBuffer);
     } catch (error) {
-        console.error('Error al procesar la transcripción:', error);
+        console.log('Error al procesar la transcripción:', error);
         res.status(500).send('Error al procesar la solicitud.');
     }
 });
@@ -132,7 +132,7 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
 
         res.send(zipBuffer);
     } catch (error) {
-        console.error('Error al procesar la justificación:', error);
+        console.log('Error al procesar la justificación:', error);
         res.status(500).send('Error al procesar la solicitud.');
     }
 });

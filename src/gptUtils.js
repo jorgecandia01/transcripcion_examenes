@@ -188,7 +188,7 @@ async function llamarGPTSoloJustificaciones(openai, pregunta, respuestas, respue
 
     try {
         const completion = await openai.chat.completions.create({
-            model: "gpt-4", // Asegúrate de usar un modelo válido
+            model: "gpt-4o", // Asegúrate de usar un modelo válido
             temperature: 0,
             messages: [
                 { role: "system", content: prompt_system },
@@ -198,7 +198,7 @@ async function llamarGPTSoloJustificaciones(openai, pregunta, respuestas, respue
 
         return completion;
     } catch (error) {
-        console.error("Error al llamar a la API de OpenAI:", error.message);
+        console.log("Error al llamar a la API de OpenAI:", error.message);
         throw error; // Re-lanzamos el error para manejarlo en el nivel superior
     }
 }

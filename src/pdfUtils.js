@@ -51,7 +51,7 @@ async function convertPdfToImages(pdfBase64) {
         const converter = await fromBuffer(pdfBuffer, options).bulk(-1, { responseType: "base64" });
         return converter;
     } catch (error) {
-        console.error("Error al convertir el PDF a imágenes: ", error);
+        console.log("Error al convertir el PDF a imágenes: ", error);
     }
 }
 
@@ -140,7 +140,7 @@ async function loadAndConvertPdf(nombre) {
 
         return imagenes;
     } catch (error) {
-        console.error("-----> Error al cargar y convertir el PDF: ", error);
+        console.log("-----> Error al cargar y convertir el PDF: ", error);
     }
 }
 
@@ -168,10 +168,10 @@ function asegurarParPDFPNG(nombrePDF) {
 
     // Verificar si el archivo .png correspondiente existe
     if (!fs.existsSync(archivoPNG)) {
-        console.error(`-----> El archivo PNG correspondiente para ${nombrePDF} NO existe`);
+        console.log(`-----> El archivo PNG correspondiente para ${nombrePDF} NO existe`);
         return false;
     } else {
-        console.error(`El archivo PNG correspondiente para ${nombrePDF} SI existe: ${archivoPNG}`);
+        console.log(`El archivo PNG correspondiente para ${nombrePDF} SI existe: ${archivoPNG}`);
         return true;
         // return archivoPNG;
     }
@@ -190,7 +190,7 @@ function convertirPNGABase64(nombrePNG) {
         const imagenBase64 = imagenBuffer.toString('base64');
         return imagenBase64;
     } catch (error) {
-        console.error(`-----> Error al leer el archivo PNG ${nombrePNG}:`, error);
+        console.log(`-----> Error al leer el archivo PNG ${nombrePNG}:`, error);
         return null;
     }
 }

@@ -55,10 +55,13 @@ async function justificarRespuestas(excel, openai) {
             const justificacion = respuestaGPT.choices[0].message.content;
             fila[8] = justificacion; // Agregar la justificación a la columna I
 
+            console.log(`Se ha justificado la fila ${i+1}. Se han utilizado ${respuestaGPT.usage.prompt_tokens + respuestaGPT.usage.completion_tokens} tokens`);
+
             // Añado precios
             tokensI += respuestaGPT.usage.prompt_tokens;
             tokensO += respuestaGPT.usage.completion_tokens;
         } catch (error) {
+            console.log(`Error al procesar la fila ${i + 1}:`, error.message);
             console.error(`Error al procesar la fila ${i + 1}:`, error.message);
             fila[8] = 'Error al obtener justificación';
         }

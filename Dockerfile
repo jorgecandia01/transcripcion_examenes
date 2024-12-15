@@ -35,6 +35,6 @@ CMD [ "node", "src/index.js" ]
 
 # docker build -t gcr.io/cosas-formantia/backend:latest .
 # docker push gcr.io/cosas-formantia/backend:latest
-# gcloud run deploy backend --image gcr.io/cosas-formantia/backend:latest --platform managed --region europe-southwest1 --allow-unauthenticated --memory 4Gi --cpu 2 --timeout 30m --max-instances 10 --min-instances 0 --concurrency 1
+# gcloud run deploy backend --image gcr.io/cosas-formantia/backend:latest --platform managed --region europe-southwest1 --allow-unauthenticated --memory 4Gi --cpu 2 --timeout 30m --max-instances 10 --min-instances 0 --concurrency 80
 
 

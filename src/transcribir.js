@@ -1,5 +1,3 @@
-const dotenv = require('dotenv');
-const OpenAI = require('openai');
 const xlsx = require('xlsx');
 const {
     transcripcionOCRImagen,
@@ -16,12 +14,7 @@ const {
     llamarGPTSoloTrancripcion,
     llamarGPTTranscripcionYJustificacion,
 } = require('./gptUtils.js');
-const pino = require('pino');
 
-
-
-dotenv.config();
-const logger = pino();
 
 // Inicializa la API de OpenAI con la clave desde variables de entorno
 // const api_key = process.env.OPENAI_API_KEY;
@@ -134,7 +127,7 @@ async function transcribirPdf(par, openai) {
 
                 return { index, contenido }; // Incluimos el índice para mantener el orden
             } catch (error) {
-                logger.error(`Error al procesar la imagen en el índice ${index + 1} del archivo ${nombre}: ${error.message}`);
+                console.log(`Error al procesar la imagen en el índice ${index + 1} del archivo ${nombre}: ${error.message}`);
                 return { index, contenido: null }; // Retorna null si ocurre un error
             }
         })
@@ -161,13 +154,13 @@ async function transcribirPdf(par, openai) {
                 console.log('Pregunta añadida correctamente de ' + nombre);
             });
         } else {
-            logger.warn('Array nulo -> no hay preguntas, no se añade nada de ' + nombre);
+            console.log('Array nulo -> no hay preguntas, no se añade nada de ' + nombre);
         }
     });
 
     // Calcular el costo
     console.log(`Tokens para ${nombre}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    console.log(`Precios para ${nombre}: Precio input: ${precioI * tokensI}, Precio output: ${precioO * tokensO}, Precio total: ${precioI * tokensI + precioO * tokensO}`);
+    console.log(`Precios para ${nombre}: Precio input: ${(precioI * tokensI).toFixed(2)}€, Precio output: ${(precioO * tokensO).toFixed(2)}€, Precio total: ${(precioI * tokensI + precioO * tokensO).toFixed(2)}€`);
 
     // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');

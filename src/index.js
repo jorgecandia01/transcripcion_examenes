@@ -140,41 +140,41 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
 // Array para guardar las conexiones activas
 const activeConnections = [];
 
-app.get('/logs', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+// app.get('/logs', (req, res) => {
+//     res.setHeader('Content-Type', 'text/event-stream');
+//     res.setHeader('Cache-Control', 'no-cache');
+//     res.setHeader('Connection', 'keep-alive');
 
-    // Añadir conexión activa
-    activeConnections.push(res);
+//     // Añadir conexión activa
+//     activeConnections.push(res);
 
-    // Enviar mensaje inicial
-    res.write(`data: Conexión establecida\n\n`);
+//     // Enviar mensaje inicial
+//     res.write(`data: Conexión establecida\n\n`);
 
-    req.on('close', () => {
-        // Eliminar conexión cerrada
-        const index = activeConnections.indexOf(res);
-        if (index !== -1) {
-            activeConnections.splice(index, 1);
-        }
-        console.log('Conexión SSE cerrada');
-    });
-});
+//     req.on('close', () => {
+//         // Eliminar conexión cerrada
+//         const index = activeConnections.indexOf(res);
+//         if (index !== -1) {
+//             activeConnections.splice(index, 1);
+//         }
+//         console.log('Conexión SSE cerrada');
+//     });
+// });
 
-// Función para enviar logs a todas las conexiones activas
-function sendLogToClients(message) {
-    activeConnections.forEach((res) => {
-        res.write(`data: ${message}\n\n`);
-    });
-}
+// // Función para enviar logs a todas las conexiones activas
+// function sendLogToClients(message) {
+//     activeConnections.forEach((res) => {
+//         res.write(`data: ${message}\n\n`);
+//     });
+// }
 
-// Reemplazar console.log solo para los mensajes enviados al cliente
-const originalLog = console.log;
-console.log = function (...args) {
-    const message = args.join(' ');
-    sendLogToClients(message);
-    originalLog(...args); // Mantener el comportamiento original de console.log
-};
+// // Reemplazar console.log solo para los mensajes enviados al cliente
+// const originalLog = console.log;
+// console.log = function (...args) {
+//     const message = args.join(' ');
+//     sendLogToClients(message);
+//     originalLog(...args); // Mantener el comportamiento original de console.log
+// };
 
 
 // Puerto

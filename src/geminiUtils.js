@@ -61,7 +61,7 @@ function translateZodSchemaToGemini(zodSchema) {
 
 
 async function llamarGeminiTranscripcionYJustificacion(imagen_json, imagen_respuestas) {
-    const gemini = new GoogleGenerativeAI('AIzaSyB7ot_gB2AIdyjKtCgG0D2lMN_uEwtvUbg');
+    const gemini = new GoogleGenerativeAI('');
     const prompt_user_examen = `Aquí está la imagen de una página del examen junto al OCR de la imagen: ${imagen_json.ocr}`;
     const prompt_user_respuestas = `Aquí está la imagen que contiene todas las respuestas del examen.`;
     const prompt_system = `Se pretende transformar un examen tipo test en formato PDF en un examen tipo test en formato JSON (JSON Schema).

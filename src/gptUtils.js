@@ -100,6 +100,7 @@ async function llamarGPTTranscripcionYJustificacion(openai, imagen_json, imagen_
 
     const completion = await openai.chat.completions.create({
         model: "gpt-4o",
+        // model: "o1",
         temperature: 0,
         messages: [
             { role: "system", content: prompt_system },

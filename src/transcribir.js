@@ -15,6 +15,7 @@ const {
     llamarGPTTranscripcionYJustificacion,
 } = require('./gptUtils.js');
 
+const { llamarGeminiTranscripcionYJustificacion } = require('./geminiUtils.js');
 
 // Inicializa la API de OpenAI con la clave desde variables de entorno
 // const api_key = process.env.OPENAI_API_KEY;
@@ -112,15 +113,17 @@ async function transcribirPdf(par, openai) {
                 let respuesta = '';
                 if (ejecucion_seleccionada === transcripcion_y_justificacion) {
                     respuesta = await llamarGPTTranscripcionYJustificacion(openai, imagen_json, imagen_respuestas);
+                    // respuesta = await llamarGeminiTranscripcionYJustificacion(imagen_json, imagen_respuestas);
                 } else if (ejecucion_seleccionada === solo_transcripcion) {
                     respuesta = await llamarGPTSoloTrancripcion(openai, imagen_json);
                 } else {
                     throw new Error('La ejecución seleccionada no ha sido reconocida')
                 }
 
-                const contenido = JSON.parse(respuesta.choices[0].message.content);
+                const contenido = JSON.parse(respuesta.choices[0].message.content); // PARA CHATGPT
+                // const contenido = respuesta; // PARA GEMINI
 
-                tokensI += respuesta.usage.prompt_tokens;
+                tokensI += respuesta.usage.prompt_tokens; // QUITAR TODO ESTO PARA GEMINI
                 tokensO += respuesta.usage.completion_tokens;
 
                 console.log(`Se ha transcrito la página ${imagen_json.page} de ${array_jsons_imagenesOCR.length} para el PDF ${nombre}. Se han utilizado ${respuesta.usage.prompt_tokens + respuesta.usage.completion_tokens} tokens`);

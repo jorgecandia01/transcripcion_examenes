@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "adm-zip": "^0.5.16",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

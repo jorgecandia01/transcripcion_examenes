@@ -408,17 +408,17 @@
 
         // Initialize Server-Sent Events (SSE) for logs
         // const eventSource = new EventSource('http://127.0.0.1:8080/logs'); // RUTA PARA LOCAL
-        const eventSource = new EventSource('https://backend-76375499655.europe-southwest1.run.app/logs'); // URL del container de docker
+        // const eventSource = new EventSource('https://backend-76375499655.europe-southwest1.run.app/logs'); // URL del container de docker
 
 
-        eventSource.onmessage = (event) => {
-            addLogMessage(event.data);
-        };
+        // eventSource.onmessage = (event) => {
+        //     addLogMessage(event.data);
+        // };
 
-        eventSource.onerror = (error) => {
-            addLogMessage('Error en la transmisión de logs.', 'error');
-            console.log('Error in SSE connection:', error);
-        };
+        // eventSource.onerror = (error) => {
+        //     addLogMessage('Error en la transmisión de logs.', 'error');
+        //     console.log('Error in SSE connection:', error);
+        // };
     </script>
 </body>
 </html>

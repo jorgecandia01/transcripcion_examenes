@@ -15,7 +15,7 @@ const {
     llamarGPTTranscripcionYJustificacion,
 } = require('./gptUtils.js');
 const { config } = require('./config/config.js');
-const { iniciarMedicion, formatearDuracion } = require('./timeUtils.js');
+const { iniciarMedicion, obtenerDuracionMs, formatearDuracionMs } = require('./timeUtils.js');
 
 // Inicializa la API de OpenAI con la clave desde variables de entorno
 // const api_key = process.env.OPENAI_API_KEY;
@@ -35,6 +35,7 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
     if (!TIPOS_EJECUCION.has(tipo_ejecucion)) throw new Error(`Tipo de ejecución no válido: ${tipo_ejecucion}`);
 
     const resultados = [];
+    const tiemposExamenes = [];
 
     const pares = verificarCorrespondenciaPDFPNG(files);
     const paresBase64 = convertirArchivosABase64(pares);
@@ -55,7 +56,9 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
             // const name = `resultado_transcripcion_${Date.now()}.xlsx`;
             const name = `${par['pdf']['name'].replace(/\.pdf$/i, '')}.xlsx`;
             resultados.push({ name, content });
-            console.log(`Examen ${par.pdf.name} completado en ${formatearDuracion(inicioExamen)}.`);
+            const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
+            tiemposExamenes.push({ name: par.pdf.name, durationMs: duracionMs });
+            console.log(`Examen ${par.pdf.name} completado en ${formatearDuracionMs(duracionMs)}.`);
             //PROBAR QUE ESPERE 20SEG ANTES DE LA SIGUIENTE ITERACIÓN
         } else {
             console.log('NO se procede a transcribir el PDF, ' + par + '. Se pasa al siguiente PDF');
@@ -63,10 +66,14 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
     }
 
     console.log('Transcripción de todos los PDFs terminada. Resultados: ', resultados);
-    if (paresBase64.length > 1) {
-        console.log(`Petición completa de ${paresBase64.length} exámenes terminada en ${formatearDuracion(inicioPeticion)}.`);
+    const duracionTotalMs = Math.round(obtenerDuracionMs(inicioPeticion));
+    if (tiemposExamenes.length > 1) {
+        console.log(`Petición completa de ${tiemposExamenes.length} exámenes terminada en ${formatearDuracionMs(duracionTotalMs)}.`);
     }
-    return resultados;
+    return {
+        resultFiles: resultados,
+        timing: { totalMs: duracionTotalMs, exams: tiemposExamenes },
+    };
 }
 
 

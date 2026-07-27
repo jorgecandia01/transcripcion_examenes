@@ -14,7 +14,17 @@ const allowedOrigins = config.server.corsOrigins === '*'
     ? '*'
     : config.server.corsOrigins.split(',').map((origin) => origin.trim()).filter(Boolean);
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({
+    origin: allowedOrigins,
+    exposedHeaders: ['X-Processing-Time-Ms', 'X-Exam-Times'],
+}));
+
+function setProcessingTimingHeaders(res, timing) {
+    res.set({
+        'X-Processing-Time-Ms': String(timing.totalMs),
+        'X-Exam-Times': encodeURIComponent(JSON.stringify(timing.exams)),
+    });
+}
 
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', environment: config.environment });
@@ -52,7 +62,8 @@ app.post('/transcribir', upload.array('files'), async (req, res) => {
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const resultFiles = await iniciarTranscripcion(solo_transcripcion, files, openai);
+        const { resultFiles, timing } = await iniciarTranscripcion(solo_transcripcion, files, openai);
+        setProcessingTimingHeaders(res, timing);
 
         if (resultFiles.length === 0) {
             return res.status(400).send('No se pudieron transcribir los archivos.');
@@ -93,7 +104,8 @@ app.post('/transcribir_y_justificar', upload.array('files'), async (req, res) =>
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const resultFiles = await iniciarTranscripcion(transcripcion_y_justificacion, files, openai);
+        const { resultFiles, timing } = await iniciarTranscripcion(transcripcion_y_justificacion, files, openai);
+        setProcessingTimingHeaders(res, timing);
 
         if (resultFiles.length === 0) {
             return res.status(400).send('No se pudieron transcribir los archivos.');
@@ -134,7 +146,8 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const resultFiles = await iniciarJustificacion(files, openai);
+        const { resultFiles, timing } = await iniciarJustificacion(files, openai);
+        setProcessingTimingHeaders(res, timing);
 
         if(resultFiles.length === 0) {
             return res.status(400).send('No se han encontrado archivos excel.');

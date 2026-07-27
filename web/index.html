@@ -317,6 +317,34 @@
             logsContainer.scrollTop = logsContainer.scrollHeight;
         }
 
+        function formatDuration(durationMs) {
+            const totalSeconds = durationMs / 1000;
+            if (totalSeconds < 60) return `${totalSeconds.toFixed(1)} s`;
+
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = (totalSeconds % 60).toFixed(1);
+            return `${minutes} min ${seconds} s`;
+        }
+
+        function addProcessingTimeLogs(response) {
+            try {
+                const encodedExamTimes = response.headers.get('X-Exam-Times');
+                const totalMs = Number(response.headers.get('X-Processing-Time-Ms'));
+                if (!encodedExamTimes) return;
+
+                const examTimes = JSON.parse(decodeURIComponent(encodedExamTimes));
+                examTimes.forEach(({ name, durationMs }) => {
+                    addLogMessage(`Examen ${name} completado en ${formatDuration(durationMs)}.`, 'success');
+                });
+
+                if (examTimes.length > 1 && Number.isFinite(totalMs)) {
+                    addLogMessage(`Petición completa de ${examTimes.length} exámenes terminada en ${formatDuration(totalMs)}.`, 'success');
+                }
+            } catch (error) {
+                console.warn('No se pudieron interpretar los tiempos de procesamiento:', error);
+            }
+        }
+
         document.getElementById('process-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -388,6 +416,7 @@
 
                 const blob = await response.blob();
                 addLogMessage('Archivos procesados exitosamente.', 'success');
+                addProcessingTimeLogs(response);
 
                 if (blob.size > 0) {
                     const url = window.URL.createObjectURL(blob);

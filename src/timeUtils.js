@@ -2,8 +2,12 @@ function iniciarMedicion() {
     return process.hrtime.bigint();
 }
 
-function formatearDuracion(inicio) {
-    const segundosTotales = Number(process.hrtime.bigint() - inicio) / 1e9;
+function obtenerDuracionMs(inicio) {
+    return Number(process.hrtime.bigint() - inicio) / 1e6;
+}
+
+function formatearDuracionMs(duracionMs) {
+    const segundosTotales = duracionMs / 1000;
 
     if (segundosTotales < 60) return `${segundosTotales.toFixed(1)} s`;
 
@@ -12,4 +16,4 @@ function formatearDuracion(inicio) {
     return `${minutos} min ${segundos} s`;
 }
 
-module.exports = { iniciarMedicion, formatearDuracion };
+module.exports = { iniciarMedicion, obtenerDuracionMs, formatearDuracionMs };

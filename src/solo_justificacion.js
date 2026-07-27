@@ -1,7 +1,7 @@
 const xlsx = require('xlsx');
 const { llamarGPTSoloJustificaciones } = require('./gptUtils.js');
 const { config } = require('./config/config.js');
-const { iniciarMedicion, formatearDuracion } = require('./timeUtils.js');
+const { iniciarMedicion, obtenerDuracionMs, formatearDuracionMs } = require('./timeUtils.js');
 
 module.exports = {
     iniciarJustificacion,
@@ -13,27 +13,34 @@ async function iniciarJustificacion(files, openai){
     // const excels = obtenerArchivosXLSX();
     // const excels = files.map(file => file.path);
     const excels = files;
-    console.log(`Archivos excel para justificar: ${excels}`);
+    console.log(`Archivos Excel para justificar: ${excels.map((excel) => excel.originalname).join(', ')}`);
 
     const resultados = [];
+    const tiemposExamenes = [];
 
     for(const excel of excels) {
         const inicioExamen = iniciarMedicion();
-        console.log('Se empieza a justificar el excel ' + excel);
+        console.log(`Se empieza a justificar el Excel ${excel.originalname}`);
         
         // await justificarRespuestas(excel, openai);
         const result = await justificarRespuestas(excel['path'], openai);
         // const name = `justificacion_resultados_${Date.now()}.xlsx`;
         const name = `justif_${excel['originalname']}`;
         resultados.push({ name, content: result });
-        console.log(`Examen ${excel.originalname} completado en ${formatearDuracion(inicioExamen)}.`);
+        const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
+        tiemposExamenes.push({ name: excel.originalname, durationMs: duracionMs });
+        console.log(`Examen ${excel.originalname} completado en ${formatearDuracionMs(duracionMs)}.`);
     }
     
     console.log('Justificación de todos los excels terminada');
-    if (excels.length > 1) {
-        console.log(`Petición completa de ${excels.length} exámenes terminada en ${formatearDuracion(inicioPeticion)}.`);
+    const duracionTotalMs = Math.round(obtenerDuracionMs(inicioPeticion));
+    if (tiemposExamenes.length > 1) {
+        console.log(`Petición completa de ${tiemposExamenes.length} exámenes terminada en ${formatearDuracionMs(duracionTotalMs)}.`);
     }
-    return resultados;
+    return {
+        resultFiles: resultados,
+        timing: { totalMs: duracionTotalMs, exams: tiemposExamenes },
+    };
 }
 
 

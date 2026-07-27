@@ -68,7 +68,7 @@ deploy-PROD: check
 		--min-instances "$(MIN_INSTANCES)" \
 		--concurrency "$(CONCURRENCY)" \
 		--update-env-vars "APP_ENV=production"
-	gcloud run services update-traffic "$(SERVICE)" \ 
+	gcloud run services update-traffic "$(SERVICE)" \
 		--project "$(PROJECT_ID)" \
 		--region "$(REGION)" \
 		--to-latest

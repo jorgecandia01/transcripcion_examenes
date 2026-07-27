@@ -1,4 +1,8 @@
 const MODEL_CATALOG = Object.freeze({
+    'gpt-5.6-sol': Object.freeze({
+        inputPricePerMillion: 5,
+        outputPricePerMillion: 30,
+    }),
     'gpt-5.6-terra': Object.freeze({
         inputPricePerMillion: 2.5,
         outputPricePerMillion: 15,

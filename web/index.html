@@ -333,12 +333,13 @@
                 if (!encodedExamTimes) return;
 
                 const examTimes = JSON.parse(decodeURIComponent(encodedExamTimes));
+                const attemptedExamCount = Number(response.headers.get('X-Attempted-Exam-Count')) || examTimes.length;
                 examTimes.forEach(({ name, durationMs }) => {
                     addLogMessage(`Examen ${name} completado en ${formatDuration(durationMs)}.`, 'success');
                 });
 
-                if (examTimes.length > 1 && Number.isFinite(totalMs)) {
-                    addLogMessage(`Petición completa de ${examTimes.length} exámenes terminada en ${formatDuration(totalMs)}.`, 'success');
+                if (attemptedExamCount > 1 && Number.isFinite(totalMs)) {
+                    addLogMessage(`Petición de ${attemptedExamCount} exámenes terminada en ${formatDuration(totalMs)}.`, 'success');
                 }
             } catch (error) {
                 console.warn('No se pudieron interpretar los tiempos de procesamiento:', error);
@@ -430,11 +431,17 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Fallo al procesar archivos: ${response.statusText}`);
+                    const backendMessage = (await response.text()).trim();
+                    throw new Error(backendMessage || `Fallo al procesar archivos: ${response.statusText}`);
                 }
 
                 const blob = await response.blob();
-                addLogMessage('Archivos procesados exitosamente.', 'success');
+                const failedExamCount = Number(response.headers.get('X-Failed-Exam-Count')) || 0;
+                if (failedExamCount > 0) {
+                    addLogMessage(`Procesamiento parcial: ${failedExamCount} examen(es) fallaron. Consulta errores_procesamiento.json dentro del ZIP.`, 'error');
+                } else {
+                    addLogMessage('Archivos procesados exitosamente.', 'success');
+                }
                 addProcessingTimeLogs(response);
                 addOpenAICostLogs(response);
 
@@ -447,7 +454,9 @@
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    document.getElementById('result').innerText = 'Procesamiento completado. Su archivo está listo para descargar.';
+                    document.getElementById('result').innerText = failedExamCount > 0
+                        ? 'Procesamiento parcial. El ZIP contiene los resultados correctos y un informe de errores.'
+                        : 'Procesamiento completado. Su archivo está listo para descargar.';
                     addLogMessage('Archivo de resultados generado.', 'success');
                 } else {
                     throw new Error('Se recibió un archivo vacío del servidor.');

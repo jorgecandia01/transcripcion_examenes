@@ -52,6 +52,7 @@ async function convertPdfToImages(pdfBase64) {
         return converter;
     } catch (error) {
         console.log("Error al convertir el PDF a imágenes: ", error);
+        throw error;
     }
 }
 
@@ -226,5 +227,4 @@ function convertirArchivosABase64(pares) {
         };
     });
 }
-
 

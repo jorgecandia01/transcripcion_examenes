@@ -35,48 +35,56 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
     if (!TIPOS_EJECUCION.has(tipo_ejecucion)) throw new Error(`Tipo de ejecución no válido: ${tipo_ejecucion}`);
 
     const resultados = [];
+    const errores = [];
     const tiemposExamenes = [];
     const costesExamenes = [];
     let totalCostUsd = 0;
 
     const pares = verificarCorrespondenciaPDFPNG(files);
-    const paresBase64 = convertirArchivosABase64(pares);
 
     console.log(`Ejecución seleccionada: ${tipo_ejecucion}`)
     // console.log(`Archivos PDF para transcribir: ${pares}`);
 
-    for(const par of paresBase64) {
-        // En solo_transcripcion no hace falta proporcionar una imagen de respuestas.
-        
-        if(par['png'] != null || tipo_ejecucion === solo_transcripcion){
-            const inicioExamen = iniciarMedicion();
+    for (const parArchivos of pares) {
+        const inicioExamen = iniciarMedicion();
+        const nombreExamen = parArchivos.pdf.originalname;
+
+        try {
+            // Leer cada par dentro de su propio bloque evita que un archivo ilegible
+            // impida procesar los demás exámenes.
+            const [par] = convertirArchivosABase64([parArchivos]);
+
+            // En solo_transcripcion no hace falta proporcionar una imagen de respuestas.
+            if (par.png == null && tipo_ejecucion !== solo_transcripcion) {
+                throw new Error('No se encontró el PNG de respuestas correspondiente.');
+            }
+
             console.log(`Se empieza a transcribir el PDF ${par.pdf.name}`);
-            // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
-            // Meto el await porque sino el OCR funciona raro
-            // await transcribirPdf(pdf, openai); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs/páginas puede saltar error
             const { content, costUsd } = await transcribirPdf(par, openai, tipo_ejecucion);
-            // const name = `resultado_transcripcion_${Date.now()}.xlsx`;
-            const name = `${par['pdf']['name'].replace(/\.pdf$/i, '')}.xlsx`;
+            const name = `${par.pdf.name.replace(/\.pdf$/i, '')}.xlsx`;
             resultados.push({ name, content });
             totalCostUsd += costUsd;
             costesExamenes.push({ name: par.pdf.name, costUsd });
             const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
             tiemposExamenes.push({ name: par.pdf.name, durationMs: duracionMs });
             console.log(`Examen ${par.pdf.name} completado en ${formatearDuracionMs(duracionMs)}.`);
-            //PROBAR QUE ESPERE 20SEG ANTES DE LA SIGUIENTE ITERACIÓN
-        } else {
-            console.log('NO se procede a transcribir el PDF, ' + par + '. Se pasa al siguiente PDF');
+        } catch (error) {
+            const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
+            const message = error instanceof Error ? error.message : String(error);
+            errores.push({ name: nombreExamen, message, durationMs: duracionMs });
+            console.error(`Error al procesar el examen ${nombreExamen}. Se continúa con el siguiente:`, error);
         }
     }
 
-    console.log('Transcripción de todos los PDFs terminada. Resultados: ', resultados);
+    console.log(`Transcripción terminada: ${resultados.length} exámenes completados y ${errores.length} fallidos.`);
     const duracionTotalMs = Math.round(obtenerDuracionMs(inicioPeticion));
-    if (tiemposExamenes.length > 1) {
-        console.log(`Petición completa de ${tiemposExamenes.length} exámenes terminada en ${formatearDuracionMs(duracionTotalMs)}.`);
+    if (pares.length > 1) {
+        console.log(`Petición completa de ${pares.length} exámenes terminada en ${formatearDuracionMs(duracionTotalMs)}.`);
     }
     return {
         resultFiles: resultados,
-        timing: { totalMs: duracionTotalMs, exams: tiemposExamenes },
+        errors: errores,
+        timing: { totalMs: duracionTotalMs, attemptedCount: pares.length, exams: tiemposExamenes },
         cost: { totalUsd: totalCostUsd, exams: costesExamenes },
     };
 }
@@ -95,7 +103,10 @@ async function transcribirPdf(par, openai, tipo_ejecucion) {
 
     // Cargar y convertir el PDF a imágenes
     // let array_jsons_imagenes = await loadAndConvertPdf(nombre) || [];
-    let array_jsons_imagenes = await convertPdfToImages(par['pdf']['base64']) || [];
+    const array_jsons_imagenes = await convertPdfToImages(par.pdf.base64);
+    if (!Array.isArray(array_jsons_imagenes) || array_jsons_imagenes.length === 0) {
+        throw new Error('El PDF no contiene páginas que se puedan procesar.');
+    }
 
     // Variables para llevar la cuenta de los tokens
     let tokensI = 0;
@@ -145,6 +156,10 @@ async function transcribirPdf(par, openai, tipo_ejecucion) {
             }
         })
     );
+
+    if (resultados.every(({ contenido }) => contenido === null)) {
+        throw new Error('No se pudo procesar ninguna página del PDF.');
+    }
 
     // Reordena los resultados por índice para garantizar el orden original
     resultados.sort((a, b) => a.index - b.index);

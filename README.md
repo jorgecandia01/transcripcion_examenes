@@ -50,3 +50,7 @@ make deploy-PROD
 ```
 
 Firebase Hosting obtains its public runtime configuration from the Cloud Run `/app-config.js` endpoint.
+
+## Resultados parciales
+
+Cada examen se procesa de forma aislada. Si uno falla, el resto continúa y los resultados correctos se devuelven en el ZIP. Cuando el resultado es parcial, el ZIP incluye `errores_procesamiento.json` con los archivos fallidos y la causa; si fallan todos, la API devuelve un error sin generar un ZIP vacío.

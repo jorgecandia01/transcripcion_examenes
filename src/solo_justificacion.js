@@ -16,6 +16,7 @@ async function iniciarJustificacion(files, openai){
     console.log(`Archivos Excel para justificar: ${excels.map((excel) => excel.originalname).join(', ')}`);
 
     const resultados = [];
+    const errores = [];
     const tiemposExamenes = [];
     const costesExamenes = [];
     let totalCostUsd = 0;
@@ -23,27 +24,33 @@ async function iniciarJustificacion(files, openai){
     for(const excel of excels) {
         const inicioExamen = iniciarMedicion();
         console.log(`Se empieza a justificar el Excel ${excel.originalname}`);
-        
-        // await justificarRespuestas(excel, openai);
-        const { content, costUsd } = await justificarRespuestas(excel['path'], openai);
-        // const name = `justificacion_resultados_${Date.now()}.xlsx`;
-        const name = `justif_${excel['originalname']}`;
-        resultados.push({ name, content });
-        totalCostUsd += costUsd;
-        costesExamenes.push({ name: excel.originalname, costUsd });
-        const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
-        tiemposExamenes.push({ name: excel.originalname, durationMs: duracionMs });
-        console.log(`Examen ${excel.originalname} completado en ${formatearDuracionMs(duracionMs)}.`);
+
+        try {
+            const { content, costUsd } = await justificarRespuestas(excel.path, openai);
+            const name = `justif_${excel.originalname}`;
+            resultados.push({ name, content });
+            totalCostUsd += costUsd;
+            costesExamenes.push({ name: excel.originalname, costUsd });
+            const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
+            tiemposExamenes.push({ name: excel.originalname, durationMs: duracionMs });
+            console.log(`Examen ${excel.originalname} completado en ${formatearDuracionMs(duracionMs)}.`);
+        } catch (error) {
+            const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
+            const message = error instanceof Error ? error.message : String(error);
+            errores.push({ name: excel.originalname, message, durationMs: duracionMs });
+            console.error(`Error al procesar el examen ${excel.originalname}. Se continúa con el siguiente:`, error);
+        }
     }
     
     console.log('Justificación de todos los excels terminada');
     const duracionTotalMs = Math.round(obtenerDuracionMs(inicioPeticion));
-    if (tiemposExamenes.length > 1) {
-        console.log(`Petición completa de ${tiemposExamenes.length} exámenes terminada en ${formatearDuracionMs(duracionTotalMs)}.`);
+    if (excels.length > 1) {
+        console.log(`Petición completa de ${excels.length} exámenes terminada en ${formatearDuracionMs(duracionTotalMs)}.`);
     }
     return {
         resultFiles: resultados,
-        timing: { totalMs: duracionTotalMs, exams: tiemposExamenes },
+        errors: errores,
+        timing: { totalMs: duracionTotalMs, attemptedCount: excels.length, exams: tiemposExamenes },
         cost: { totalUsd: totalCostUsd, exams: costesExamenes },
     };
 }

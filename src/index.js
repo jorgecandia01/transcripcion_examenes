@@ -16,16 +16,40 @@ const allowedOrigins = config.server.corsOrigins === '*'
 
 app.use(cors({
     origin: allowedOrigins,
-    exposedHeaders: ['X-Processing-Time-Ms', 'X-Exam-Times', 'X-OpenAI-Cost-Usd', 'X-Exam-Costs'],
+    exposedHeaders: ['X-Processing-Time-Ms', 'X-Attempted-Exam-Count', 'X-Exam-Times', 'X-OpenAI-Cost-Usd', 'X-Exam-Costs', 'X-Failed-Exam-Count'],
 }));
 
-function setProcessingHeaders(res, timing, cost) {
+function setProcessingHeaders(res, timing, cost, errors) {
     res.set({
         'X-Processing-Time-Ms': String(timing.totalMs),
+        'X-Attempted-Exam-Count': String(timing.attemptedCount),
         'X-Exam-Times': encodeURIComponent(JSON.stringify(timing.exams)),
         'X-OpenAI-Cost-Usd': cost.totalUsd.toFixed(6),
         'X-Exam-Costs': encodeURIComponent(JSON.stringify(cost.exams)),
+        'X-Failed-Exam-Count': String(errors.length),
     });
+}
+
+function createResultZip(resultFiles, errors) {
+    const zip = new AdmZip();
+    resultFiles.forEach(({ name, content }) => zip.addFile(name, content));
+
+    if (errors.length > 0) {
+        const report = {
+            status: 'partial',
+            successfulExams: resultFiles.map(({ name }) => name),
+            failedExams: errors,
+        };
+        zip.addFile('errores_procesamiento.json', Buffer.from(JSON.stringify(report, null, 2), 'utf8'));
+    }
+
+    return zip.toBuffer();
+}
+
+function getAllFailedMessage(errors, fallbackMessage) {
+    if (errors.length === 0) return fallbackMessage;
+    const names = errors.map(({ name }) => name).join(', ');
+    return `No se pudo procesar ningún examen. Archivos fallidos: ${names}.`;
 }
 
 app.get('/health', (_req, res) => {
@@ -64,20 +88,14 @@ app.post('/transcribir', upload.array('files'), async (req, res) => {
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const { resultFiles, timing, cost } = await iniciarTranscripcion(solo_transcripcion, files, openai);
-        setProcessingHeaders(res, timing, cost);
+        const { resultFiles, errors, timing, cost } = await iniciarTranscripcion(solo_transcripcion, files, openai);
+        setProcessingHeaders(res, timing, cost, errors);
 
         if (resultFiles.length === 0) {
-            return res.status(400).send('No se pudieron transcribir los archivos.');
+            return res.status(422).send(getAllFailedMessage(errors, 'No se pudieron transcribir los archivos.'));
         }
 
-        // Crear un ZIP en memoria
-        const zip = new AdmZip();
-        resultFiles.forEach(({ name, content }) => {
-            zip.addFile(name, content);
-        });
-
-        const zipBuffer = zip.toBuffer();
+        const zipBuffer = createResultZip(resultFiles, errors);
 
         res.set({
             'Content-Type': 'application/zip',
@@ -106,20 +124,14 @@ app.post('/transcribir_y_justificar', upload.array('files'), async (req, res) =>
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const { resultFiles, timing, cost } = await iniciarTranscripcion(transcripcion_y_justificacion, files, openai);
-        setProcessingHeaders(res, timing, cost);
+        const { resultFiles, errors, timing, cost } = await iniciarTranscripcion(transcripcion_y_justificacion, files, openai);
+        setProcessingHeaders(res, timing, cost, errors);
 
         if (resultFiles.length === 0) {
-            return res.status(400).send('No se pudieron transcribir los archivos.');
+            return res.status(422).send(getAllFailedMessage(errors, 'No se pudieron transcribir los archivos.'));
         }
 
-        // Crear un ZIP en memoria
-        const zip = new AdmZip();
-        resultFiles.forEach(({ name, content }) => {
-            zip.addFile(name, content);
-        });
-
-        const zipBuffer = zip.toBuffer();
+        const zipBuffer = createResultZip(resultFiles, errors);
 
         res.set({
             'Content-Type': 'application/zip',
@@ -148,20 +160,14 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const { resultFiles, timing, cost } = await iniciarJustificacion(files, openai);
-        setProcessingHeaders(res, timing, cost);
+        const { resultFiles, errors, timing, cost } = await iniciarJustificacion(files, openai);
+        setProcessingHeaders(res, timing, cost, errors);
 
         if(resultFiles.length === 0) {
-            return res.status(400).send('No se han encontrado archivos excel.');
+            return res.status(422).send(getAllFailedMessage(errors, 'No se han encontrado archivos Excel.'));
         }
 
-        // Crear un ZIP en memoria
-        const zip = new AdmZip();
-        resultFiles.forEach(({ name, content }) => {
-            zip.addFile(name, content);
-        });
-
-        const zipBuffer = zip.toBuffer();
+        const zipBuffer = createResultZip(resultFiles, errors);
 
         res.set({
             'Content-Type': 'application/zip',

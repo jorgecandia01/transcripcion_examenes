@@ -1,8 +1,9 @@
 const xlsx = require('xlsx');
 const { llamarGPTSoloJustificaciones } = require('./gptUtils.js');
-
-const precioI = 2.5 / 1000000;
-const precioO = 10 / 1000000;
+const {
+    OPENAI_INPUT_PRICE_PER_TOKEN,
+    OPENAI_OUTPUT_PRICE_PER_TOKEN,
+} = require('./openaiConfig.js');
 
 module.exports = {
     iniciarJustificacion,
@@ -71,7 +72,7 @@ async function justificarRespuestas(excel, openai) {
 
     // Calcular el costo
     console.log(`Tokens para ${excel}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    console.log(`Precios para ${excel}: Precio input: ${(precioI * tokensI).toFixed(2)}€, Precio output: ${(precioO * tokensO).toFixed(2)}€, Precio total: ${(precioI * tokensI + precioO * tokensO).toFixed(2)}€`);
+    console.log(`Coste estimado para ${excel}: input $${(OPENAI_INPUT_PRICE_PER_TOKEN * tokensI).toFixed(2)} USD, output $${(OPENAI_OUTPUT_PRICE_PER_TOKEN * tokensO).toFixed(2)} USD, total $${(OPENAI_INPUT_PRICE_PER_TOKEN * tokensI + OPENAI_OUTPUT_PRICE_PER_TOKEN * tokensO).toFixed(2)} USD`);
 
     // Convertir los datos de vuelta a hoja de cálculo
     const nuevaHoja = xlsx.utils.aoa_to_sheet(datos);
@@ -83,4 +84,3 @@ async function justificarRespuestas(excel, openai) {
 
     return buffer;
 }
-

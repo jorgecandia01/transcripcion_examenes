@@ -14,15 +14,16 @@ const {
     llamarGPTSoloTrancripcion,
     llamarGPTTranscripcionYJustificacion,
 } = require('./gptUtils.js');
+const {
+    OPENAI_INPUT_PRICE_PER_TOKEN,
+    OPENAI_OUTPUT_PRICE_PER_TOKEN,
+} = require('./openaiConfig.js');
 
 const { llamarGeminiTranscripcionYJustificacion } = require('./geminiUtils.js');
 
 // Inicializa la API de OpenAI con la clave desde variables de entorno
 // const api_key = process.env.OPENAI_API_KEY;
 // const openai = new OpenAI({ apiKey: api_key });
-
-const precioI = 2.5 / 1000000;
-const precioO = 10 / 1000000;
 
 const solo_transcripcion = 'solo_transcripcion';
 const transcripcion_y_justificacion = 'transcripcion_y_justificacion';
@@ -163,7 +164,7 @@ async function transcribirPdf(par, openai) {
 
     // Calcular el costo
     console.log(`Tokens para ${nombre}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    console.log(`Precios para ${nombre}: Precio input: ${(precioI * tokensI).toFixed(2)}€, Precio output: ${(precioO * tokensO).toFixed(2)}€, Precio total: ${(precioI * tokensI + precioO * tokensO).toFixed(2)}€`);
+    console.log(`Coste estimado para ${nombre}: input $${(OPENAI_INPUT_PRICE_PER_TOKEN * tokensI).toFixed(2)} USD, output $${(OPENAI_OUTPUT_PRICE_PER_TOKEN * tokensO).toFixed(2)} USD, total $${(OPENAI_INPUT_PRICE_PER_TOKEN * tokensI + OPENAI_OUTPUT_PRICE_PER_TOKEN * tokensO).toFixed(2)} USD`);
 
     // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');
@@ -174,5 +175,3 @@ async function transcribirPdf(par, openai) {
 
     return buffer;
 }
-
-

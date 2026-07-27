@@ -84,10 +84,14 @@ async function llamarGPTTranscripcionYJustificacion(openai, imagen_json, imagen_
     los índices de las preguntas de la primera imagen y su correspondencia en la hoja de soluciones, que es la segunda imagen. Algunas veces, la
     respuesta correcta aparece vacía, entonces pondrás 'ANULADA'. NUNCA te inventarás la respuesta correcta. También pondrás un string 
     vacío en 'respuesta_correcta' en caso de que no logres identificar con precisión la respuesta correcta en la imagen, pero NO TE LA INVENTARÁS.
-    Para la clave 'respuesta_justificacion', debes razonar la pregunta y justificar la respuesta como un experto en la materia que eres,
-    pero SIEMPRE SIEMPRE fijándote en la respuesta marcada como correcta en la imagen proporcionada en el prompt y justificando por qué la respuesta
-    seleccionada es la correcta. Es decir, PRIMERO debes asociar la respuesta correcta desde la imagen y meterla en 'respuesta_correcta', y 
-    es luego y SÓLAMENTE luego, cuando debes justificar por qué esa respuesta es la correcta. 
+    Para la clave 'respuesta_justificacion', PRIMERO debes asociar la solución de la imagen con la pregunta y guardarla en 'respuesta_correcta'.
+    SÓLAMENTE después debes razonar la pregunta y redactar una justificación experta basada en esa solución. Si tus conocimientos indican que la
+    solución proporcionada es errónea, no intentes justificarla: explica la discrepancia y razona la que consideras correcta.
+    En 'respuesta_justificacion' no debes repetir ni identificar explícitamente cuál es la respuesta correcta: explica directamente el razonamiento
+    que la sustenta. La única excepción es que, según tus conocimientos, la solución proporcionada sea errónea; en ese caso, señala claramente la
+    discrepancia e indica cuál sería la respuesta correcta usando el texto de la respuesta, nunca su letra o su posición.
+    No hagas ninguna alusión a letras de opción (A, B, C, D o E), números de opción ni expresiones como «la primera opción», ya que las respuestas
+    se barajan y su posición puede cambiar. Esta prohibición se aplica incluso al referirte a respuestas incorrectas.
     Es decir, aquí sí que debes ser un experto, saber por qué es correcto y aportar con tu conocimiento, en un rango aproximado de 100-150 palabras. 
     La clave 'error' será false por defecto, y está reservada para los casos en los que la imagen proporcionada no contiene
     preguntas, o estas no cumplen con el JSON Schema proporcionado. Si pasa esto o cualquier otro problema, su valor debe ser 'true'.
@@ -177,8 +181,13 @@ async function llamarGPTSoloJustificaciones(openai, pregunta, respuestas, respue
     const prompt_system = `
         Eres un experto en oposiciones sanitarias y te dedicas a justificar las respuestas correctas de exámenes tipo test.
         A continuación, se te es entregada una pregunta de este examen, con sus opciones de respuesta y la RESPUESTA CORRECTA. 
-        Debes justificar por qué la respuesta marcada como correcta es correcta, en base a tus conocimientos. 
-        No justifiques ninguna otra respuesta, SÓLAMENTE la respuesta marcada como correcta. Extensión: 100-150 palabras.
+        Debes redactar una justificación experta basada en la respuesta indicada como correcta. Si tus conocimientos indican que esa respuesta es
+        errónea, no intentes justificarla: explica la discrepancia y razona la que consideras correcta. Extensión: 100-150 palabras.
+        En la justificación no repitas ni identifiques explícitamente cuál es la respuesta correcta: explica directamente el razonamiento que la
+        sustenta. La única excepción es que, según tus conocimientos, la respuesta indicada como correcta sea errónea; en ese caso, señala claramente
+        la discrepancia e indica cuál sería la respuesta correcta usando el texto de la respuesta, nunca su letra o su posición.
+        No hagas ninguna alusión a letras de opción (A, B, C o D), números de opción ni expresiones como «la primera opción», ya que las respuestas
+        se barajan y su posición puede cambiar. Esta prohibición se aplica incluso al referirte a respuestas incorrectas.
     `;
 
     const prompt_user_examen = `

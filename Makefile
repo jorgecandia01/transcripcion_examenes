@@ -15,9 +15,9 @@ PLATFORM ?= linux/amd64
 MEMORY ?= 5Gi
 CPU ?= 2
 TIMEOUT ?= 60m
-MAX_INSTANCES ?= 3
+MAX_INSTANCES ?= 10
 MIN_INSTANCES ?= 0
-CONCURRENCY ?= 10
+CONCURRENCY ?= 1
 
 .PHONY: help install check local deploy-PROD
 

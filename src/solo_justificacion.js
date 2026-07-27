@@ -1,6 +1,7 @@
 const xlsx = require('xlsx');
 const { llamarGPTSoloJustificaciones } = require('./gptUtils.js');
 const { config } = require('./config/config.js');
+const { iniciarMedicion, formatearDuracion } = require('./timeUtils.js');
 
 module.exports = {
     iniciarJustificacion,
@@ -8,6 +9,7 @@ module.exports = {
 
 
 async function iniciarJustificacion(files, openai){
+    const inicioPeticion = iniciarMedicion();
     // const excels = obtenerArchivosXLSX();
     // const excels = files.map(file => file.path);
     const excels = files;
@@ -16,6 +18,7 @@ async function iniciarJustificacion(files, openai){
     const resultados = [];
 
     for(const excel of excels) {
+        const inicioExamen = iniciarMedicion();
         console.log('Se empieza a justificar el excel ' + excel);
         
         // await justificarRespuestas(excel, openai);
@@ -23,9 +26,13 @@ async function iniciarJustificacion(files, openai){
         // const name = `justificacion_resultados_${Date.now()}.xlsx`;
         const name = `justif_${excel['originalname']}`;
         resultados.push({ name, content: result });
+        console.log(`Examen ${excel.originalname} completado en ${formatearDuracion(inicioExamen)}.`);
     }
     
     console.log('Justificación de todos los excels terminada');
+    if (excels.length > 1) {
+        console.log(`Petición completa de ${excels.length} exámenes terminada en ${formatearDuracion(inicioPeticion)}.`);
+    }
     return resultados;
 }
 

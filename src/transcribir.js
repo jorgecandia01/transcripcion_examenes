@@ -15,6 +15,7 @@ const {
     llamarGPTTranscripcionYJustificacion,
 } = require('./gptUtils.js');
 const { config } = require('./config/config.js');
+const { iniciarMedicion, formatearDuracion } = require('./timeUtils.js');
 
 // Inicializa la API de OpenAI con la clave desde variables de entorno
 // const api_key = process.env.OPENAI_API_KEY;
@@ -30,6 +31,7 @@ module.exports = {
 
 
 async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
+    const inicioPeticion = iniciarMedicion();
     if (!TIPOS_EJECUCION.has(tipo_ejecucion)) throw new Error(`Tipo de ejecución no válido: ${tipo_ejecucion}`);
 
     const resultados = [];
@@ -44,6 +46,7 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
         // En solo_transcripcion no hace falta proporcionar una imagen de respuestas.
         
         if(par['png'] != null || tipo_ejecucion === solo_transcripcion){
+            const inicioExamen = iniciarMedicion();
             console.log(`Se empieza a transcribir el PDF ${par.pdf.name}`);
             // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
             // Meto el await porque sino el OCR funciona raro
@@ -52,6 +55,7 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
             // const name = `resultado_transcripcion_${Date.now()}.xlsx`;
             const name = `${par['pdf']['name'].replace(/\.pdf$/i, '')}.xlsx`;
             resultados.push({ name, content });
+            console.log(`Examen ${par.pdf.name} completado en ${formatearDuracion(inicioExamen)}.`);
             //PROBAR QUE ESPERE 20SEG ANTES DE LA SIGUIENTE ITERACIÓN
         } else {
             console.log('NO se procede a transcribir el PDF, ' + par + '. Se pasa al siguiente PDF');
@@ -59,6 +63,9 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
     }
 
     console.log('Transcripción de todos los PDFs terminada. Resultados: ', resultados);
+    if (paresBase64.length > 1) {
+        console.log(`Petición completa de ${paresBase64.length} exámenes terminada en ${formatearDuracion(inicioPeticion)}.`);
+    }
     return resultados;
 }
 

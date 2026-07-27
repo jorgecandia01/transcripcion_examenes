@@ -42,6 +42,8 @@ check:
 local: check
 	npm run start:dev
 
+# Hacer antes gcloud auth login y firebase login --reauth
+# IMP! update-traffic para que la nueva versión reciba todo el tráfico, que a veces se lia
 deploy-PROD: check
 	@command -v gcloud >/dev/null || { echo "Error: gcloud no está instalado."; exit 1; }
 	@command -v docker >/dev/null || { echo "Error: Docker no está instalado."; exit 1; }
@@ -66,5 +68,9 @@ deploy-PROD: check
 		--min-instances "$(MIN_INSTANCES)" \
 		--concurrency "$(CONCURRENCY)" \
 		--update-env-vars "APP_ENV=production"
+	gcloud run services update-traffic "$(SERVICE)" \ 
+		--project "$(PROJECT_ID)" \
+		--region "$(REGION)" \
+		--to-latest
 	firebase deploy --only hosting --project "$(PROJECT_ID)"
 	@echo "Despliegue completado: $$(gcloud run services describe "$(SERVICE)" --project "$(PROJECT_ID)" --region "$(REGION)" --format='value(status.url)')"

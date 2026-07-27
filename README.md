@@ -45,6 +45,7 @@ Deploy the complete application (Cloud Run backend and Firebase frontend):
 
 ```bash
 gcloud auth login
+firebase login --reauth
 make deploy-PROD
 ```
 

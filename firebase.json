@@ -11,8 +11,7 @@
         "source": "/app-config.js",
         "run": {
           "serviceId": "backend",
-          "region": "europe-southwest1",
-          "pinTag": true
+          "region": "europe-southwest1"
         }
       }
     ]

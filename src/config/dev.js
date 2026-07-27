@@ -8,5 +8,5 @@ module.exports = {
     public: {
         apiBaseUrl: 'http://127.0.0.1:8080',
     },
-    openai: createOpenAIConfig('gpt-5.6-terra', 'medium'),
+    openai: createOpenAIConfig('gpt-5.6-luna', 'medium'),
 };

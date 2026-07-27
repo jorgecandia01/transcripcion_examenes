@@ -3,6 +3,10 @@ const MODEL_CATALOG = Object.freeze({
         inputPricePerMillion: 2.5,
         outputPricePerMillion: 15,
     }),
+    'gpt-5.6-luna': Object.freeze({
+        inputPricePerMillion: 1,
+        outputPricePerMillion: 6,
+    }),
 });
 
 const ALLOWED_REASONING_EFFORTS = new Set(['none', 'low', 'medium', 'high', 'xhigh', 'max']);

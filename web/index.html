@@ -282,6 +282,7 @@
         <div id="log-messages"></div>
     </div>
 
+    <script src="/app-config.js"></script>
     <script>
         const fileInput = document.getElementById('file');
         const fileListContainer = document.getElementById('file-list');
@@ -354,9 +355,11 @@
             document.getElementById('result').innerText = 'Procesando...';
 
             try {
-                let endpoint = '';
-                endpoint = 'https://backend-76375499655.europe-southwest1.run.app';
-                // endpoint = 'http://127.0.0.1:8080';
+                if (!window.APP_CONFIG?.apiBaseUrl) {
+                    throw new Error('No se pudo cargar la configuración. Inicia la aplicación con "make local".');
+                }
+
+                let endpoint = window.APP_CONFIG.apiBaseUrl;
 
                 switch (processType) {
                     case 'solo_transcripcion':

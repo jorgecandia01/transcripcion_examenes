@@ -1,9 +1,14 @@
 {
+  "scripts": {
+    "start": "node src/index.js",
+    "start:dev": "APP_ENV=development node src/index.js",
+    "start:prod": "APP_ENV=production node src/index.js",
+    "check": "node --check src/config/config.js && node --check src/config/dev.js && node --check src/config/prod.js && node --check src/config/openaiConfig.js && node --check src/index.js && node --check src/gptUtils.js && node --check src/transcribir.js && node --check src/solo_justificacion.js"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "adm-zip": "^0.5.16",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1",
     "openai": "^4.57.0",
@@ -25,7 +30,7 @@
       "src/target/resultados_solo_justificacion/**/*",
       "src/target/resultados_solo_transcripcion/**/*",
       "src/target/resultados_transcripcion_y_justificacion/**/*",
-      ".env"
+      "src/config/**/*"
     ]
   }
 }

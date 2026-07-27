@@ -22,10 +22,9 @@ pids/
 .AppleDouble
 .LSOverride
 
-# Environments
+# Overrides locales y secretos; la configuración versionada vive en config/
 .env
-.env.local
-.env.*.local
+.env.*
 
 # Coverage directory used by tools like istanbul
 coverage/

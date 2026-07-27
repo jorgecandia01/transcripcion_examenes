@@ -19,22 +19,13 @@ COPY src ./src
 # Creo la carpeta uploads
 RUN mkdir -p uploads
 
-# Install app dependencies
-RUN npm install
-
-# Copy the rest of your app's source code
-# COPY . .
+# Instala exactamente las versiones registradas en package-lock.json
+# --omit=dev evita instalar dependencias de desarrollo
+RUN npm ci --omit=dev
 
 # Expose the port your app runs on
 EXPOSE 8080
 
 # Define the command to run your app
 CMD [ "node", "src/index.js" ]
-
-
-
-# docker build -t gcr.io/cosas-formantia/backend:latest .
-# docker push gcr.io/cosas-formantia/backend:latest
-# gcloud run deploy backend --image gcr.io/cosas-formantia/backend:latest --platform managed --region europe-southwest1 --allow-unauthenticated --memory 5Gi --cpu 3 --timeout 60m --max-instances 3 --min-instances 0 --concurrency 80
-
-
+# Construcción y despliegue: make deploy-PROD

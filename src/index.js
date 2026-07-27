@@ -2,12 +2,36 @@ const OpenAI = require('openai');
 const express = require('express');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
+const path = require('path');
 const { iniciarTranscripcion } = require('./transcribir.js');
 const { iniciarJustificacion } = require('./solo_justificacion.js');
 const cors = require('cors');
+const { config, logConfig } = require('./config/config.js');
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = config.server.corsOrigins === '*'
+    ? '*'
+    : config.server.corsOrigins.split(',').map((origin) => origin.trim()).filter(Boolean);
+
+app.use(cors({ origin: allowedOrigins }));
+
+app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', environment: config.environment });
+});
+
+/// Endpoint para servir la configuración pública de la aplicación
+app.get('/app-config.js', (_req, res) => {
+    res.type('application/javascript');
+    res.set('Cache-Control', 'no-store');
+    res.send(`window.APP_CONFIG = Object.freeze(${JSON.stringify(config.public)});`);
+});
+
+// Para poder hacer "make local", declaro /web aquí para que express la sirva como estática
+// Para prod ya tengo en firebase.json "public": "web"
+if (config.environment === 'development') {
+    app.use(express.static(path.resolve(__dirname, '../web')));
+}
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -24,7 +48,7 @@ app.post('/transcribir', upload.array('files'), async (req, res) => {
             return res.status(400).send('Faltan parámetros necesarios.');
         }
 
-        console.log('Iniciando transcripción:', { apiKey, tipo: solo_transcripcion, files });
+        console.log('Iniciando transcripción:', { tipo: solo_transcripcion, archivos: files.map((file) => file.originalname) });
 
         const openai = new OpenAI({ apiKey: apiKey });
 
@@ -65,7 +89,7 @@ app.post('/transcribir_y_justificar', upload.array('files'), async (req, res) =>
             return res.status(400).send('Faltan parámetros necesarios.');
         }
 
-        console.log('Iniciando transcripción y justificación:', { apiKey, tipo: transcripcion_y_justificacion, files });
+        console.log('Iniciando transcripción y justificación:', { tipo: transcripcion_y_justificacion, archivos: files.map((file) => file.originalname) });
 
         const openai = new OpenAI({ apiKey: apiKey });
 
@@ -106,7 +130,7 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
             return res.status(400).send('Faltan parámetros necesarios.');
         }
 
-        console.log('Iniciando justificación:', { apiKey, files });
+        console.log('Iniciando justificación:', { archivos: files.map((file) => file.originalname) });
 
         const openai = new OpenAI({ apiKey: apiKey });
 
@@ -178,7 +202,7 @@ const activeConnections = [];
 
 
 // Puerto
-const PORT = 8080;
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+app.listen(config.server.port, () => {
+    logConfig();
+    console.log(`Servidor disponible en ${config.public.apiBaseUrl}`);
 });

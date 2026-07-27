@@ -1,6 +1,12 @@
 const { z } = require('zod');
 const { zodResponseFormat } = require('openai/helpers/zod');
-const { OPENAI_MODEL, OPENAI_REASONING_EFFORT } = require('./openaiConfig.js');
+const { config } = require('./config/config.js');
+
+const openaiRequestConfig = {
+    model: config.openai.model,
+    reasoning_effort: config.openai.reasoningEffort,
+    ...(config.openai.reasoningEffort === 'none' ? { temperature: 0 } : {}),
+};
 
 
 module.exports = {
@@ -100,9 +106,7 @@ async function llamarGPTTranscripcionYJustificacion(openai, imagen_json, imagen_
     const ExamenSchema5 = getSchema_5opciones();
 
     const completion = await openai.chat.completions.create({
-        model: OPENAI_MODEL,
-        reasoning_effort: OPENAI_REASONING_EFFORT,
-        temperature: 0,
+        ...openaiRequestConfig,
         messages: [
             { role: "system", content: prompt_system },
             { role: "user", content: [
@@ -146,9 +150,7 @@ async function llamarGPTSoloTrancripcion(openai, imagen_json) {
     const ExamenSchema_SoloTrancripcion_5opciones = getSchema_SoloTrancripcion_5opciones();
 
     const completion = await openai.chat.completions.create({
-        model: OPENAI_MODEL,
-        reasoning_effort: OPENAI_REASONING_EFFORT,
-        temperature: 0,
+        ...openaiRequestConfig,
         messages: [
             { role: "system", content: prompt_system },
             { role: "user", content: [
@@ -191,9 +193,7 @@ async function llamarGPTSoloJustificaciones(openai, pregunta, respuestas, respue
 
     try {
         const completion = await openai.chat.completions.create({
-            model: OPENAI_MODEL,
-            reasoning_effort: OPENAI_REASONING_EFFORT,
-            temperature: 0,
+            ...openaiRequestConfig,
             messages: [
                 { role: "system", content: prompt_system },
                 { role: "user", content: prompt_user_examen },

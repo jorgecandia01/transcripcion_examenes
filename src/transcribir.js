@@ -14,12 +14,7 @@ const {
     llamarGPTSoloTrancripcion,
     llamarGPTTranscripcionYJustificacion,
 } = require('./gptUtils.js');
-const {
-    OPENAI_INPUT_PRICE_PER_TOKEN,
-    OPENAI_OUTPUT_PRICE_PER_TOKEN,
-} = require('./openaiConfig.js');
-
-const { llamarGeminiTranscripcionYJustificacion } = require('./geminiUtils.js');
+const { config } = require('./config/config.js');
 
 // Inicializa la API de OpenAI con la clave desde variables de entorno
 // const api_key = process.env.OPENAI_API_KEY;
@@ -53,7 +48,7 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
         // if((ejecucion_seleccionada == solo_transcripcion) || asegurarParPDFPNG(pdf)){ // En solo_transc no hace falta asegurar el par
         
         if(par['png'] != null || (ejecucion_seleccionada == solo_transcripcion)){ 
-            console.log('Se empieza a transcribir el PDF ' + par);
+            console.log(`Se empieza a transcribir el PDF ${par.pdf.name}`);
             // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
             // Meto el await porque sino el OCR funciona raro
             // await transcribirPdf(pdf, openai); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs/páginas puede saltar error
@@ -164,7 +159,7 @@ async function transcribirPdf(par, openai) {
 
     // Calcular el costo
     console.log(`Tokens para ${nombre}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    console.log(`Coste estimado para ${nombre}: input $${(OPENAI_INPUT_PRICE_PER_TOKEN * tokensI).toFixed(2)} USD, output $${(OPENAI_OUTPUT_PRICE_PER_TOKEN * tokensO).toFixed(2)} USD, total $${(OPENAI_INPUT_PRICE_PER_TOKEN * tokensI + OPENAI_OUTPUT_PRICE_PER_TOKEN * tokensO).toFixed(2)} USD`);
+    console.log(`Coste estimado para ${nombre}: input $${(config.openai.inputPricePerToken * tokensI).toFixed(2)} USD, output $${(config.openai.outputPricePerToken * tokensO).toFixed(2)} USD, total $${(config.openai.inputPricePerToken * tokensI + config.openai.outputPricePerToken * tokensO).toFixed(2)} USD`);
 
     // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');

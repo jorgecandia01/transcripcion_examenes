@@ -22,8 +22,7 @@ const { config } = require('./config/config.js');
 
 const solo_transcripcion = 'solo_transcripcion';
 const transcripcion_y_justificacion = 'transcripcion_y_justificacion';
-
-var ejecucion_seleccionada = ''
+const TIPOS_EJECUCION = new Set([solo_transcripcion, transcripcion_y_justificacion]);
 
 module.exports = {
     iniciarTranscripcion
@@ -31,28 +30,25 @@ module.exports = {
 
 
 async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
-    ejecucion_seleccionada = tipo_ejecucion;
+    if (!TIPOS_EJECUCION.has(tipo_ejecucion)) throw new Error(`Tipo de ejecución no válido: ${tipo_ejecucion}`);
 
-    // const pdfs = obtenerArchivosPDF();
-    // const pdfs = obtenerArchivosPDFCrawler();
-    // const pdfs = files.map(file => file.path); 
     const resultados = [];
 
     const pares = verificarCorrespondenciaPDFPNG(files);
     const paresBase64 = convertirArchivosABase64(pares);
 
-    console.log(`Ejecución seleccionada: ${ejecucion_seleccionada}`)
+    console.log(`Ejecución seleccionada: ${tipo_ejecucion}`)
     // console.log(`Archivos PDF para transcribir: ${pares}`);
 
     for(const par of paresBase64) {
-        // if((ejecucion_seleccionada == solo_transcripcion) || asegurarParPDFPNG(pdf)){ // En solo_transc no hace falta asegurar el par
+        // En solo_transcripcion no hace falta proporcionar una imagen de respuestas.
         
-        if(par['png'] != null || (ejecucion_seleccionada == solo_transcripcion)){ 
+        if(par['png'] != null || tipo_ejecucion === solo_transcripcion){
             console.log(`Se empieza a transcribir el PDF ${par.pdf.name}`);
             // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
             // Meto el await porque sino el OCR funciona raro
             // await transcribirPdf(pdf, openai); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs/páginas puede saltar error
-            const content = await transcribirPdf(par, openai); // No paso ejecucion_seleccionada porque es variable global
+            const content = await transcribirPdf(par, openai, tipo_ejecucion);
             // const name = `resultado_transcripcion_${Date.now()}.xlsx`;
             const name = `${par['pdf']['name'].replace(/\.pdf$/i, '')}.xlsx`;
             resultados.push({ name, content });
@@ -70,14 +66,13 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
 
 
 
-async function transcribirPdf(par, openai) {
+async function transcribirPdf(par, openai, tipo_ejecucion) {
     const nombre = par['pdf']['name'];
 
     // Obtengo la imagen png en base64 para ingestarla a chatgpt
-    if((ejecucion_seleccionada == transcripcion_y_justificacion)){
-        // var imagen_respuestas = convertirPNGABase64(`${nombreBase}.png`);
-        var imagen_respuestas = par['png']['base64'];
-    }
+    const imagen_respuestas = tipo_ejecucion === transcripcion_y_justificacion
+        ? par['png']['base64']
+        : null;
 
     // Cargar y convertir el PDF a imágenes
     // let array_jsons_imagenes = await loadAndConvertPdf(nombre) || [];
@@ -107,10 +102,10 @@ async function transcribirPdf(par, openai) {
         array_jsons_imagenesOCR.map(async (imagen_json, index) => {
             try {
                 let respuesta = '';
-                if (ejecucion_seleccionada === transcripcion_y_justificacion) {
+                if (tipo_ejecucion === transcripcion_y_justificacion) {
                     respuesta = await llamarGPTTranscripcionYJustificacion(openai, imagen_json, imagen_respuestas);
                     // respuesta = await llamarGeminiTranscripcionYJustificacion(imagen_json, imagen_respuestas);
-                } else if (ejecucion_seleccionada === solo_transcripcion) {
+                } else if (tipo_ejecucion === solo_transcripcion) {
                     respuesta = await llamarGPTSoloTrancripcion(openai, imagen_json);
                 } else {
                     throw new Error('La ejecución seleccionada no ha sido reconocida')
@@ -163,10 +158,7 @@ async function transcribirPdf(par, openai) {
 
     // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');
-    // xlsx.writeFile(workbook, `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
-
     const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
-    // console.log('-- Preguntas guardadas en ' + `src/target/resultados_${ejecucion_seleccionada}/${nombreBase}.xlsx`);
 
     return buffer;
 }

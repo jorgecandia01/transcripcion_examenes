@@ -36,6 +36,8 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
 
     const resultados = [];
     const tiemposExamenes = [];
+    const costesExamenes = [];
+    let totalCostUsd = 0;
 
     const pares = verificarCorrespondenciaPDFPNG(files);
     const paresBase64 = convertirArchivosABase64(pares);
@@ -52,10 +54,12 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
             // Sin el await para que no se interrumpa y se hagan múltiples PDFs a la vez (chatgpt tarda una eternidad)
             // Meto el await porque sino el OCR funciona raro
             // await transcribirPdf(pdf, openai); // Mucho cuidado con los RATE LIMITS -> si son muchos PDFs/páginas puede saltar error
-            const content = await transcribirPdf(par, openai, tipo_ejecucion);
+            const { content, costUsd } = await transcribirPdf(par, openai, tipo_ejecucion);
             // const name = `resultado_transcripcion_${Date.now()}.xlsx`;
             const name = `${par['pdf']['name'].replace(/\.pdf$/i, '')}.xlsx`;
             resultados.push({ name, content });
+            totalCostUsd += costUsd;
+            costesExamenes.push({ name: par.pdf.name, costUsd });
             const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
             tiemposExamenes.push({ name: par.pdf.name, durationMs: duracionMs });
             console.log(`Examen ${par.pdf.name} completado en ${formatearDuracionMs(duracionMs)}.`);
@@ -73,6 +77,7 @@ async function iniciarTranscripcion(tipo_ejecucion, files, openai) {
     return {
         resultFiles: resultados,
         timing: { totalMs: duracionTotalMs, exams: tiemposExamenes },
+        cost: { totalUsd: totalCostUsd, exams: costesExamenes },
     };
 }
 
@@ -166,13 +171,15 @@ async function transcribirPdf(par, openai, tipo_ejecucion) {
         }
     });
 
-    // Calcular el costo
+    const inputCostUsd = config.openai.inputPricePerToken * tokensI;
+    const outputCostUsd = config.openai.outputPricePerToken * tokensO;
+    const costUsd = inputCostUsd + outputCostUsd;
     console.log(`Tokens para ${nombre}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    console.log(`Coste estimado para ${nombre}: input $${(config.openai.inputPricePerToken * tokensI).toFixed(2)} USD, output $${(config.openai.outputPricePerToken * tokensO).toFixed(2)} USD, total $${(config.openai.inputPricePerToken * tokensI + config.openai.outputPricePerToken * tokensO).toFixed(2)} USD`);
+    console.log(`Coste estimado para ${nombre}: input $${inputCostUsd.toFixed(2)} USD, output $${outputCostUsd.toFixed(2)} USD, total $${costUsd.toFixed(2)} USD`);
 
     // Añadir la hoja de trabajo al libro de trabajo y guardar el archivo Excel
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Preguntas');
     const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
 
-    return buffer;
+    return { content: buffer, costUsd };
 }

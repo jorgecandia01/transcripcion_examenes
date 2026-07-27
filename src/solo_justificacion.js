@@ -17,16 +17,20 @@ async function iniciarJustificacion(files, openai){
 
     const resultados = [];
     const tiemposExamenes = [];
+    const costesExamenes = [];
+    let totalCostUsd = 0;
 
     for(const excel of excels) {
         const inicioExamen = iniciarMedicion();
         console.log(`Se empieza a justificar el Excel ${excel.originalname}`);
         
         // await justificarRespuestas(excel, openai);
-        const result = await justificarRespuestas(excel['path'], openai);
+        const { content, costUsd } = await justificarRespuestas(excel['path'], openai);
         // const name = `justificacion_resultados_${Date.now()}.xlsx`;
         const name = `justif_${excel['originalname']}`;
-        resultados.push({ name, content: result });
+        resultados.push({ name, content });
+        totalCostUsd += costUsd;
+        costesExamenes.push({ name: excel.originalname, costUsd });
         const duracionMs = Math.round(obtenerDuracionMs(inicioExamen));
         tiemposExamenes.push({ name: excel.originalname, durationMs: duracionMs });
         console.log(`Examen ${excel.originalname} completado en ${formatearDuracionMs(duracionMs)}.`);
@@ -40,6 +44,7 @@ async function iniciarJustificacion(files, openai){
     return {
         resultFiles: resultados,
         timing: { totalMs: duracionTotalMs, exams: tiemposExamenes },
+        cost: { totalUsd: totalCostUsd, exams: costesExamenes },
     };
 }
 
@@ -81,9 +86,11 @@ async function justificarRespuestas(excel, openai) {
     // Esperar a que todas las promesas se completen
     await Promise.all(promesas);
 
-    // Calcular el costo
+    const inputCostUsd = config.openai.inputPricePerToken * tokensI;
+    const outputCostUsd = config.openai.outputPricePerToken * tokensO;
+    const costUsd = inputCostUsd + outputCostUsd;
     console.log(`Tokens para ${excel}: Tokens input: ${tokensI}, Tokens output: ${tokensO}, Tokens totales: ${tokensI + tokensO}`);
-    console.log(`Coste estimado para ${excel}: input $${(config.openai.inputPricePerToken * tokensI).toFixed(2)} USD, output $${(config.openai.outputPricePerToken * tokensO).toFixed(2)} USD, total $${(config.openai.inputPricePerToken * tokensI + config.openai.outputPricePerToken * tokensO).toFixed(2)} USD`);
+    console.log(`Coste estimado para ${excel}: input $${inputCostUsd.toFixed(2)} USD, output $${outputCostUsd.toFixed(2)} USD, total $${costUsd.toFixed(2)} USD`);
 
     // Convertir los datos de vuelta a hoja de cálculo
     const nuevaHoja = xlsx.utils.aoa_to_sheet(datos);
@@ -93,5 +100,5 @@ async function justificarRespuestas(excel, openai) {
     // Generar el buffer del archivo Excel modificado
     const buffer = xlsx.write(nuevoLibro, { bookType: 'xlsx', type: 'buffer' });
 
-    return buffer;
+    return { content: buffer, costUsd };
 }

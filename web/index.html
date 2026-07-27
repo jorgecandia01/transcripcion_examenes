@@ -345,6 +345,25 @@
             }
         }
 
+        function addOpenAICostLogs(response) {
+            try {
+                const encodedExamCosts = response.headers.get('X-Exam-Costs');
+                if (!encodedExamCosts) return;
+
+                const examCosts = JSON.parse(decodeURIComponent(encodedExamCosts));
+                examCosts.forEach(({ name, costUsd }) => {
+                    addLogMessage(`Coste estimado de ${name}: $${costUsd.toFixed(4)} USD.`, 'success');
+                });
+
+                const totalCostUsd = Number(response.headers.get('X-OpenAI-Cost-Usd'));
+                if (examCosts.length > 1 && Number.isFinite(totalCostUsd)) {
+                    addLogMessage(`Coste total estimado: $${totalCostUsd.toFixed(4)} USD.`, 'success');
+                }
+            } catch (error) {
+                console.warn('No se pudieron interpretar los costes:', error);
+            }
+        }
+
         document.getElementById('process-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -417,6 +436,7 @@
                 const blob = await response.blob();
                 addLogMessage('Archivos procesados exitosamente.', 'success');
                 addProcessingTimeLogs(response);
+                addOpenAICostLogs(response);
 
                 if (blob.size > 0) {
                     const url = window.URL.createObjectURL(blob);

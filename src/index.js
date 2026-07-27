@@ -16,13 +16,15 @@ const allowedOrigins = config.server.corsOrigins === '*'
 
 app.use(cors({
     origin: allowedOrigins,
-    exposedHeaders: ['X-Processing-Time-Ms', 'X-Exam-Times'],
+    exposedHeaders: ['X-Processing-Time-Ms', 'X-Exam-Times', 'X-OpenAI-Cost-Usd', 'X-Exam-Costs'],
 }));
 
-function setProcessingTimingHeaders(res, timing) {
+function setProcessingHeaders(res, timing, cost) {
     res.set({
         'X-Processing-Time-Ms': String(timing.totalMs),
         'X-Exam-Times': encodeURIComponent(JSON.stringify(timing.exams)),
+        'X-OpenAI-Cost-Usd': cost.totalUsd.toFixed(6),
+        'X-Exam-Costs': encodeURIComponent(JSON.stringify(cost.exams)),
     });
 }
 
@@ -62,8 +64,8 @@ app.post('/transcribir', upload.array('files'), async (req, res) => {
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const { resultFiles, timing } = await iniciarTranscripcion(solo_transcripcion, files, openai);
-        setProcessingTimingHeaders(res, timing);
+        const { resultFiles, timing, cost } = await iniciarTranscripcion(solo_transcripcion, files, openai);
+        setProcessingHeaders(res, timing, cost);
 
         if (resultFiles.length === 0) {
             return res.status(400).send('No se pudieron transcribir los archivos.');
@@ -104,8 +106,8 @@ app.post('/transcribir_y_justificar', upload.array('files'), async (req, res) =>
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const { resultFiles, timing } = await iniciarTranscripcion(transcripcion_y_justificacion, files, openai);
-        setProcessingTimingHeaders(res, timing);
+        const { resultFiles, timing, cost } = await iniciarTranscripcion(transcripcion_y_justificacion, files, openai);
+        setProcessingHeaders(res, timing, cost);
 
         if (resultFiles.length === 0) {
             return res.status(400).send('No se pudieron transcribir los archivos.');
@@ -146,8 +148,8 @@ app.post('/justificar', upload.array('files'), async (req, res) => {
 
         const openai = new OpenAI({ apiKey: apiKey });
 
-        const { resultFiles, timing } = await iniciarJustificacion(files, openai);
-        setProcessingTimingHeaders(res, timing);
+        const { resultFiles, timing, cost } = await iniciarJustificacion(files, openai);
+        setProcessingHeaders(res, timing, cost);
 
         if(resultFiles.length === 0) {
             return res.status(400).send('No se han encontrado archivos excel.');
